@@ -1,0 +1,6 @@
+{
+  "name": "Hamon Studio — HTML5 インタラクティブ・アトリエ",
+  "description": "HTML5 CanvasとWeb Audio APIで波紋・振り子幾何学・万華鏡・重力軌道を体験し、単体HTMLファイルとして書き出せるインタラクティブ・アトリエ。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
