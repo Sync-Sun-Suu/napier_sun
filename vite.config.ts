@@ -5,6 +5,8 @@ import {defineConfig} from 'vite';
 
 export default defineConfig(() => {
   return {
+    // GitHub Pages では /napier_sun/ の下に置くので、PAGES_BASE で場所を渡す（AI Studio では今までどおり /）
+    base: process.env.PAGES_BASE || '/',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

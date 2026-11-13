@@ -1,5 +1,7 @@
 # Hamon Studio — HTML5 インタラクティブ・アトリエ
 
+**遊ぶ** → https://sync-sun-suu.github.io/napier_sun/
+
 Created with **Sumie** ✨  
 ブラウザ標準の **HTML5 `<canvas>`** と **Web Audio API** だけで、水面の波紋・振り子幾何学・万華鏡・重力軌道をリアルタイムに描き、五音音階（陽音階）のサウンドとともに体験できるインタラクティブ・アトリエです。
 
