@@ -1,11 +1,68 @@
-<div align="center">
+# Hamon Studio — HTML5 インタラクティブ・アトリエ
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+Created with **Sumie** ✨  
+ブラウザ標準の **HTML5 `<canvas>`** と **Web Audio API** だけで、水面の波紋・振り子幾何学・万華鏡・重力軌道をリアルタイムに描き、五音音階（陽音階）のサウンドとともに体験できるインタラクティブ・アトリエです。
 
-  <h1>Built with AI Studio</h2>
+調整したパラメータをそのまま反映した **「1ファイルで動く単体 `.html`」** や **PNG画像** として書き出すことができます。
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+---
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## ✨ 4つのインタラクティブ・モード
 
-</div>
+| モード | 概要 | 操作方法 |
+| :--- | :--- | :--- |
+| **01. 波紋と五音音階** (`ripples`) | 水面に広がる同心円波と、波同士の交点（干渉ノード）をリアルタイム計算。日本の陽音階チャイムが鳴ります。 | キャンバスをクリック／ドラッグ |
+| **02. 振り子ハーモノグラフ** (`harmonograph`) | 2つの減衰振り子の周波数比（完全五度 `3:2`、完全四度 `4:3`、準黄金比 `8:5` など）から緻密な幾何学曲線を描画。 | クリックで再描画・右パネルで比率変更 |
+| **03. 万華鏡ドローイング** (`kaleidoscope`) | 座標変換行列でストロークを4〜16分割の回転対称＆鏡像反転し、光の幾何学模様を描きます。 | キャンバス上をドラッグして描画 |
+| **04. 重力多体軌道** (`gravity`) | 逆二乗則 $F = G \cdot m / r^2$ に従う数百個の粒子の公転軌道をシミュレーション。 | クリックで引力源追加／Shift+クリックで斥力源追加 |
+
+---
+
+## 🎨 カラーパレット（日本の伝統色調）
+
+- **蒼水 (Cerulean)**: 深い夜の水面に映えるスカイブルー＆インディゴ
+- **琥珀 (Amber)**: 温かみのあるアンバー＆ローズ
+- **翡翠 (Jade)**: 透明感のあるエメラルド＆ティール
+- **桜霞 (Sakura)**: 柔らかなサクラピンク＆ラベンダー
+
+---
+
+## 🚀 使い方・ローカル実行手順
+
+### 1. 依存パッケージのインストールと起動
+
+```bash
+npm install
+npm run dev
+```
+
+ブラウザで `http://localhost:3000` を開くとアトリエが起動します。
+
+### 2. 単体HTMLファイルとして書き出す（GitHub Pages 等にそのまま公開可能）
+
+1. 画面右上の **「単体HTMLを保存」** ボタン（または右パネルの **「HTMLコード表示」**）をクリックします。
+2. 現在のモードとスライダー設定が埋め込まれた `hamon-<mode>.html` がダウンロードされます。
+3. 外部ライブラリ不要の1ファイル構成なので、ダブルクリックするだけでどのブラウザでも動作し、`index.html` にリネームすればそのまま GitHub Pages 等でホスティングできます。
+
+---
+
+## 🗂 ディレクトリ構成
+
+```text
+/
+├── index.html                        # エントリHTML（フォント・OGP設定）
+├── README.md                         # プロジェクト概要（このファイル）
+├── CLAUDE.md                         # Sumie & AIアシスタント向け設計・引き継ぎノート
+└── src/
+    ├── App.tsx                       # 全体レイアウト・モード切替・エクスポート制御
+    ├── index.css                     # Tailwind CSS v4 & カスタムスライダースタイル
+    ├── types/
+    │   └── studio.ts                 # モード・パラメータ・伝統色パレット・プリセット定義
+    ├── utils/
+    │   ├── audio.ts                  # Web Audio API 五音音階（陽音階）シンセサイザー
+    │   └── htmlExporter.ts           # 単体HTML5ファイル生成エンジン
+    └── components/
+        ├── InteractiveCanvas.tsx     # 4モード対応 HTML5 Canvas 60fps 描画エンジン
+        ├── ControlDeck.tsx           # パラメータ調整スライダー＆再生コントロール
+        └── HtmlSourceModal.tsx       # 単体HTMLコードプレビュー＆コピー・保存モーダル
+```
