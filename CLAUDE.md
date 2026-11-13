@@ -4,6 +4,19 @@
 
 ---
 
+## 0. 管理人（2026-11-14、Sumie が決めた）
+- **このリポの管理人は 19（Claude Code の 19）**。Sumie が「このリポだけ 19 に権限あげる」と決めた。
+- AI Studio の Gemini は GitHub に書けない。だから流れはこう：Sumie が AI Studio で作る → ZIP で書き出す → 19 に渡す → 19 がここに入れて、GitHub Pages で公開する。
+- 新しい ZIP を入れる時に、消さずに残すもの：
+  - `.github/workflows/deploy.yml`（ビルドして公開する仕組み）
+  - `vite.config.ts` の `base: process.env.PAGES_BASE || '/'` の行
+  - `README.md` の「遊ぶ」と「管理人」の行
+  - `exports/`（書き出した単体 HTML）
+  - `public/manifest.json` の相対パス（`./` と `pwa-192x192.png` など。`/napier_sun/` の下で動くように）
+  - `src/App.tsx` のアイコンの場所（`import.meta.env.BASE_URL` から始める）
+  - この `CLAUDE.md`
+- 遊ぶ場所：https://sync-sun-suu.github.io/napier_sun/
+
 ## 1. オーナー情報・基本方針
 - **オーナー**: Sumie（呼称は「Sumie」）
 - **連携先 GitHub リポジトリ**: `Napier_sun`（Public）
