@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="54%" r="60%">
+      <stop offset="0%" stop-color="#172038" />
+      <stop offset="55%" stop-color="#090e1c" />
+      <stop offset="100%" stop-color="#050811" />
+    </radialGradient>
+    <radialGradient id="hearthGlow" cx="50%" cy="54%" r="36%">
+      <stop offset="0%" stop-color="#fef3c7" stop-opacity="0.95" />
+      <stop offset="35%" stop-color="#fbbf24" stop-opacity="0.55" />
+      <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#060913" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="goldSpiral" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef3c7" />
+      <stop offset="50%" stop-color="#fbbf24" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="cyanSpiral" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#bae6fd" />
+      <stop offset="50%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+  </defs>
+
+  <!-- Deep Abyssal Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGlow)" />
+
+  <!-- Outer 60s Clock Dial Track -->
+  <circle cx="256" cy="256" r="196" fill="none" stroke="#ffffff" stroke-opacity="0.08" stroke-width="3" />
+  <circle cx="256" cy="256" r="196" fill="none" stroke="url(#goldSpiral)" stroke-width="5" stroke-linecap="round" stroke-dasharray="920 400" transform="rotate(-90 256 256)" />
+
+  <!-- 12 Clock Hour Ticks -->
+  <g stroke="#e2e8f0" stroke-opacity="0.35" stroke-width="3" stroke-linecap="round">
+    <line x1="256" y1="46" x2="256" y2="56" />
+    <line x1="256" y1="456" x2="256" y2="466" />
+    <line x1="46" y1="256" x2="56" y2="256" />
+    <line x1="456" y1="256" x2="466" y2="256" />
+  </g>
+
+  <!-- Warm Bonfire / Napier Sun Core Glow -->
+  <circle cx="256" cy="272" r="145" fill="url(#hearthGlow)" />
+
+  <!-- Logarithmic Spiral Arm 1 (Gold Bonfire) -->
+  <path
+    d="M 256 272 C 268 272, 276 260, 270 248 C 260 230, 232 232, 222 254 C 208 286, 230 326, 268 332 C 320 340, 362 290, 356 232 C 348 160, 272 114, 196 136"
+    fill="none"
+    stroke="url(#goldSpiral)"
+    stroke-width="6.5"
+    stroke-linecap="round"
+    opacity="0.92"
+  />
+
+  <!-- Logarithmic Spiral Arm 2 (Cerulean Resonance) -->
+  <path
+    d="M 256 272 C 244 272, 236 284, 242 296 C 252 314, 280 312, 290 290 C 304 258, 282 218, 244 212 C 192 204, 150 254, 156 312 C 164 384, 240 430, 316 408"
+    fill="none"
+    stroke="url(#cyanSpiral)"
+    stroke-width="4.5"
+    stroke-linecap="round"
+    opacity="0.78"
+  />
+
+  <!-- Anti-Gravity Rising Embers -->
+  <circle cx="256" cy="60" r="7" fill="#fef3c7" />
+  <circle cx="218" cy="186" r="4.5" fill="#fef3c7" opacity="0.9" />
+  <circle cx="298" cy="172" r="5.5" fill="#fbbf24" opacity="0.85" />
+  <circle cx="242" cy="148" r="3.5" fill="#38bdf8" opacity="0.85" />
+  <circle cx="276" cy="134" r="4" fill="#fef3c7" opacity="0.75" />
+  <circle cx="188" cy="238" r="3.5" fill="#fbbf24" opacity="0.7" />
+  <circle cx="324" cy="222" r="4" fill="#38bdf8" opacity="0.75" />
+
+  <!-- Center 2.718 Typography Emblem -->
+  <text
+    x="256"
+    y="264"
+    text-anchor="middle"
+    fill="#ffffff"
+    font-family="'Outfit', -apple-system, sans-serif"
+    font-weight="700"
+    font-size="54"
+    letter-spacing="-1"
+  >
+    2.718
+  </text>
+  <text
+    x="256"
+    y="296"
+    text-anchor="middle"
+    fill="#fbbf24"
+    font-family="monospace"
+    font-weight="600"
+    font-size="18"
+    letter-spacing="4"
+  >
+    NAPIER SUN
+  </text>
+</svg>

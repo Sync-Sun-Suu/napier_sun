@@ -2,18 +2,27 @@
 <html lang="ja" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hamon Studio — HTML5 インタラクティブ・アトリエ</title>
-    <meta name="description" content="HTML5 CanvasとWeb Audio APIで波紋・振り子幾何学・万華鏡・重力軌道を体験し、単体HTMLファイルとして書き出せるインタラクティブ・アトリエ。" />
-    <meta property="og:title" content="Hamon Studio — HTML5 インタラクティブ・アトリエ" />
-    <meta property="og:description" content="HTML5 CanvasとWeb Audio APIで波紋・振り子幾何学・万華鏡・重力軌道を体験し、単体HTMLファイルとして書き出せるインタラクティブ・アトリエ。" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>2.718 焚き火時計 — Napier_sun Ambient Clock</title>
+    <meta name="description" content="ネイピア数 e = 2.718 の対数螺旋と1/fゆらぎの焚き火が時を刻む、iPad・デスクトップ対応アンビエント時計。" />
+    <meta property="og:title" content="2.718 焚き火時計 — Napier_sun Ambient Clock" />
+    <meta property="og:description" content="ネイピア数 e = 2.718 の対数螺旋と1/fゆらぎの焚き火が時を刻む、iPad・デスクトップ対応アンビエント時計。" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <!-- iPad / iOS Home Screen Web App & Icon Meta Tags -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="2.718 時計" />
+    <meta name="theme-color" content="#060913" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="manifest" href="/manifest.json" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Noto+Sans+JP:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=IBM+Plex+Mono:ital,wght@0,400;0,600;1,400&family=Noto+Sans+JP:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&family=Shippori+Mincho:wght@500;600&display=swap" rel="stylesheet" />
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased selection:bg-sky-500/30 selection:text-sky-100">
+  <body class="bg-[#060913] text-slate-100 antialiased selection:bg-amber-400/30 selection:text-amber-100 overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

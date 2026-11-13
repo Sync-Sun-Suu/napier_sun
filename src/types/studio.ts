@@ -1,9 +1,5 @@
-export enum StudioMode {
-  Ripples = 'ripples',
-  Harmonograph = 'harmonograph',
-  Kaleidoscope = 'kaleidoscope',
-  Gravity = 'gravity',
-}
+export type ClockFontStyle = 'sans' | 'serif' | 'mono';
+export type ClockPosition = 'center' | 'top' | 'corner';
 
 export interface ColorPalette {
   id: string;
@@ -14,66 +10,59 @@ export interface ColorPalette {
   canvasBg: string;
 }
 
-export interface RippleParams {
-  waveSpeed: number;     // px/frame (1.5 - 6.0)
-  damping: number;       // 0.960 - 0.995
-  autoRain: boolean;     // gentle periodic droplets
-  rainInterval: number;  // frames between droplets (20 - 120)
-  ringCount: number;     // harmonic concentric rings (2 - 6)
-}
-
-export interface HarmonographParams {
-  freqX: number;         // 1.0 - 9.0 Hz
-  freqY: number;         // 1.0 - 9.0 Hz
-  phaseShift: number;    // 0 - 3.14 rad
-  damping: number;       // 0.0005 - 0.008
-  drawSpeed: number;     // steps per frame (1 - 12)
-  rotaryMix: number;     // 0 - 0.5 secondary rotary pendulum
-}
-
-export interface KaleidoscopeParams {
-  symmetry: number;      // 4 - 16 fold
-  mirror: boolean;       // mirror reflection within each sector
-  brushSize: number;     // 1.5 - 10 px
-  glowStrength: number;  // 0 - 20 px
-  autoRotate: number;    // 0 - 1.5 deg/frame
-}
-
-export interface GravityParams {
-  particleCount: number; // 120 - 600
-  gravityStrength: number; // 20 - 160
-  trailFade: number;     // 0.03 - 0.25
-  initialSpin: number;   // 0.3 - 1.5 tangential factor
-}
-
-export interface StudioState {
-  mode: StudioMode;
+export interface NapierClockState {
   paletteId: string;
   isPlaying: boolean;
   soundEnabled: boolean;
-  ripples: RippleParams;
-  harmonograph: HarmonographParams;
-  kaleidoscope: KaleidoscopeParams;
-  gravity: GravityParams;
+  // Sumie's Golden Spiral & Bonfire Physics
+  spiralExponent: number;   // b in r = a * e^(b * theta), default: 0.125
+  antiGravityLift: number;  // upward & spiral float force, default: 0.850
+  filamentWeb: number;      // connection distance between deep particles, default: 15 px
+  tactileGrain: number;     // velvet/glass luminescence & grain intensity, default: 0.35
+  bonfireSway: boolean;     // 1/f organic bonfire flame sway & rising hearth embers
+  // Soundscape & Spatial Reverb
+  bonfireSound: boolean;    // procedural Web Audio warm bonfire crackle & hearth sound
+  bonfireWarmth: number;    // 0.1 (静かな熾火) to 1.0 (パチパチ焚き火), default: 0.65
+  reverbDepth: number;      // 0.0 to 0.90 spatial cathedral/abyssal reverb tail, default: 0.65
+  autoChime: boolean;       // gentle periodic e-harmonic glass chime every minute
+  harmonicDrone: boolean;   // continuous 2.718s breathing harmonic resonance
+  // Timepiece & Visuals
+  clockFont: ClockFontStyle;
+  clockPosition: ClockPosition;
+  showAnalogRing: boolean;  // 60s orbital ring + 2.718s pulse halo
+  glassFrost: number;       // 0.0 (transparent) to 0.85 (frosted glass card), default: 0.35
+  // 27:18 (e = 2.718) Focus Timer
+  timerActive: boolean;
+  timerRemainingSec: number; // default 27 * 60 + 18 = 1638 sec
+  timerTotalSec: number;
 }
 
-export interface TelemetryReadout {
-  fps: number;
-  pointerX: number;
-  pointerY: number;
-  activeElements: number;
-  canvasWidth: number;
-  canvasHeight: number;
-}
+export const NAPIER_TIMER_SECONDS = 27 * 60 + 18; // 27分18秒 (2.718)
 
 export const COLOR_PALETTES: ColorPalette[] = [
+  {
+    id: 'napier_gold',
+    name: '深層太陽 (Napier Sun)',
+    primary: '#fbbf24',
+    secondary: '#38bdf8',
+    accent: '#fef3c7',
+    canvasBg: '#060913',
+  },
+  {
+    id: 'bonfire_hearth',
+    name: '宵の焚き火 (Bonfire)',
+    primary: '#f97316',
+    secondary: '#fbbf24',
+    accent: '#fffbeb',
+    canvasBg: '#0b0705',
+  },
   {
     id: 'cerulean',
     name: '蒼水 (Cerulean)',
     primary: '#38bdf8',
     secondary: '#818cf8',
     accent: '#f8fafc',
-    canvasBg: '#090f1d',
+    canvasBg: '#070d19',
   },
   {
     id: 'amber',
@@ -81,7 +70,7 @@ export const COLOR_PALETTES: ColorPalette[] = [
     primary: '#f59e0b',
     secondary: '#fb7185',
     accent: '#fef3c7',
-    canvasBg: '#120f0c',
+    canvasBg: '#100c09',
   },
   {
     id: 'jade',
@@ -89,7 +78,7 @@ export const COLOR_PALETTES: ColorPalette[] = [
     primary: '#34d399',
     secondary: '#2dd4bf',
     accent: '#ecfdf5',
-    canvasBg: '#081412',
+    canvasBg: '#06110f',
   },
   {
     id: 'sakura',
@@ -97,50 +86,29 @@ export const COLOR_PALETTES: ColorPalette[] = [
     primary: '#f472b6',
     secondary: '#c084fc',
     accent: '#fdf2f8',
-    canvasBg: '#130c16',
+    canvasBg: '#110a14',
   },
 ];
 
-export interface HarmonographPreset {
-  label: string;
-  ratioText: string;
-  freqX: number;
-  freqY: number;
-  phaseShift: number;
-  rotaryMix: number;
-}
-
-export const HARMONOGRAPH_PRESETS: HarmonographPreset[] = [
-  {
-    label: '完全五度 (3:2)',
-    ratioText: '3 : 2',
-    freqX: 3.0,
-    freqY: 2.0,
-    phaseShift: 1.57,
-    rotaryMix: 0.18,
-  },
-  {
-    label: '完全四度 (4:3)',
-    ratioText: '4 : 3',
-    freqX: 4.0,
-    freqY: 3.0,
-    phaseShift: 0.78,
-    rotaryMix: 0.12,
-  },
-  {
-    label: '長六度 (5:3)',
-    ratioText: '5 : 3',
-    freqX: 5.0,
-    freqY: 3.0,
-    phaseShift: 1.15,
-    rotaryMix: 0.25,
-  },
-  {
-    label: '準黄金比 (8:5)',
-    ratioText: '8 : 5',
-    freqX: 8.0,
-    freqY: 5.0,
-    phaseShift: 2.09,
-    rotaryMix: 0.32,
-  },
-];
+export const SUMIE_GOLDEN_PRESET: Omit<
+  NapierClockState,
+  'timerActive' | 'timerRemainingSec' | 'timerTotalSec'
+> = {
+  paletteId: 'napier_gold',
+  isPlaying: true,
+  soundEnabled: true,
+  spiralExponent: 0.125,
+  antiGravityLift: 0.85,
+  filamentWeb: 15,
+  tactileGrain: 0.35,
+  bonfireSway: true,
+  bonfireSound: false,
+  bonfireWarmth: 0.65,
+  reverbDepth: 0.68,
+  autoChime: true,
+  harmonicDrone: false,
+  clockFont: 'sans',
+  clockPosition: 'center',
+  showAnalogRing: true,
+  glassFrost: 0.32,
+};
