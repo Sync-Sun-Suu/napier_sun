@@ -2,14 +2,18 @@ import React from 'react';
 import {
   Clock,
   Code2,
+  Compass,
+  Fish,
   Flame,
   ImageDown,
   RotateCcw,
   Sparkles,
   Timer,
+  Waves,
   X,
 } from 'lucide-react';
 import {
+  AbyssalQuality,
   ClockFontStyle,
   ClockPosition,
   COLOR_PALETTES,
@@ -51,7 +55,7 @@ const SliderRow: React.FC<SliderRowProps> = ({
   <div className="space-y-1.5">
     <div className="flex items-center justify-between text-xs">
       <label className="text-slate-300 font-medium">{label}</label>
-      <span className="font-mono tabular-nums text-amber-300">{valueText}</span>
+      <span className="font-mono tabular-nums text-cyan-300">{valueText}</span>
     </div>
     <input
       type="range"
@@ -77,6 +81,12 @@ const POSITION_OPTIONS: { value: ClockPosition; label: string }[] = [
   { value: 'corner', label: '右下' },
 ];
 
+const QUALITY_OPTIONS: { value: AbyssalQuality; label: string }[] = [
+  { value: 'low', label: 'Low (軽量)' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High (高精細)' },
+];
+
 export const ControlDeck: React.FC<ControlDeckProps> = ({
   isOpen,
   state,
@@ -88,14 +98,18 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const isAbyssal = state.sceneMode === 'abyssal';
+
   return (
-    <aside className="fixed top-16 right-4 bottom-20 z-40 w-[350px] max-w-[calc(100vw-2rem)] flex flex-col justify-between rounded-2xl border border-slate-800/90 bg-slate-950/90 backdrop-blur-xl p-5 shadow-2xl overflow-y-auto">
+    <aside className="fixed top-16 right-4 bottom-20 z-40 w-[360px] max-w-[calc(100vw-2rem)] flex flex-col justify-between rounded-2xl border border-slate-800/90 bg-slate-950/92 backdrop-blur-xl p-5 shadow-2xl overflow-y-auto">
       <div className="space-y-5">
         {/* Drawer Header */}
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
           <div>
             <h2 className="text-sm font-semibold text-slate-100">
-              2.718 焚き火時計・質感と音の調整
+              {isAbyssal
+                ? '2.718 深海水槽 (Abyssal) 調整'
+                : '2.718 焚き火時計 (Bonfire) 調整'}
             </h2>
             <p className="text-[11px] text-slate-400">
               iPad 常時表示・単体HTML書き出しにそのまま反映されます
@@ -111,26 +125,194 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
           </button>
         </div>
 
-        {/* 1. Clock Typography, Ring & Glass Texture */}
+        {/* 0. World Mode Switcher (Abyssal Aquarium vs Bonfire Clock) */}
+        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800">
+          <button
+            type="button"
+            onClick={() =>
+              onChange((p) => ({
+                ...p,
+                sceneMode: 'abyssal',
+                paletteId:
+                  p.paletteId === 'bonfire_hearth' || p.paletteId === 'napier_gold'
+                    ? 'abyssal_garden'
+                    : p.paletteId,
+              }))
+            }
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              isAbyssal
+                ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/50 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Fish className="w-3.5 h-3.5 text-cyan-300" />
+            <span>🐋 深海水槽 (3D)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              onChange((p) => ({
+                ...p,
+                sceneMode: 'bonfire',
+                paletteId:
+                  p.paletteId === 'abyssal_garden' ? 'napier_gold' : p.paletteId,
+              }))
+            }
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              !isAbyssal
+                ? 'bg-amber-500/20 text-amber-200 border border-amber-400/50 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5 text-amber-400" />
+            <span>🔥 焚き火時計</span>
+          </button>
+        </div>
+
+        {/* 1. Abyssal 3D Ecosystem & Swim Controls (when in Abyssal Mode) */}
+        {isAbyssal && (
+          <div className="space-y-3.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-slate-200 font-semibold">
+                <Compass className="w-3.5 h-3.5 text-cyan-300" />
+                <span>3D深海生態系（マンタ・Boids魚群・光）</span>
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange((p) => ({
+                    ...p,
+                    cameraMode: p.cameraMode === 'cruise' ? 'free' : 'cruise',
+                  }))
+                }
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors cursor-pointer ${
+                  state.cameraMode === 'free'
+                    ? 'bg-cyan-400/20 text-cyan-200 border-cyan-400/50'
+                    : 'bg-slate-900 text-slate-300 border-slate-800'
+                }`}
+              >
+                {state.cameraMode === 'free' ? '視点: 自由遊泳' : '視点: 自動クルーズ'}
+              </button>
+            </div>
+
+            <SliderRow
+              label="優美に泳ぐマンタの数 (Manta Rays)"
+              valueText={`${state.mantaCount} 頭`}
+              min={1}
+              max={12}
+              step={1}
+              value={state.mantaCount}
+              onChange={(v) =>
+                onChange((p) => ({ ...p, mantaCount: Math.round(v) }))
+              }
+            />
+
+            <SliderRow
+              label="小魚の群れ・Boids群泳密度 (Schools of Fish)"
+              valueText={`${state.boidsCount} 匹`}
+              min={60}
+              max={360}
+              step={20}
+              value={state.boidsCount}
+              onChange={(v) =>
+                onChange((p) => ({ ...p, boidsCount: Math.round(v) }))
+              }
+            />
+
+            <SliderRow
+              label="海面からの光の筋・コースティクス強度"
+              valueText={`${Math.round(state.causticsIntensity * 100)} %`}
+              min={0.1}
+              max={1.0}
+              step={0.05}
+              value={state.causticsIntensity}
+              onChange={(v) =>
+                onChange((p) => ({ ...p, causticsIntensity: v }))
+              }
+            />
+
+            <SliderRow
+              label="1/f ゆらぎのケルプの森・サンゴ密度"
+              valueText={`${Math.round(state.kelpDensity * 100)} %`}
+              min={0.15}
+              max={1.0}
+              step={0.05}
+              value={state.kelpDensity}
+              onChange={(v) => onChange((p) => ({ ...p, kelpDensity: v }))}
+            />
+
+            <div className="space-y-1.5 pt-1">
+              <span className="text-[11px] text-slate-400">
+                3D描画クオリティ（iPad・スマホ負荷調整）
+              </span>
+              <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-slate-900 border border-slate-800">
+                {QUALITY_OPTIONS.map((q) => {
+                  const active = state.qualityLevel === q.value;
+                  return (
+                    <button
+                      key={q.value}
+                      type="button"
+                      onClick={() =>
+                        onChange((p) => ({ ...p, qualityLevel: q.value }))
+                      }
+                      className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                        active
+                          ? 'bg-slate-800 text-cyan-300 shadow-xs'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {q.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <hr className="border-slate-800/80" />
+
+        {/* 2. Clock Typography, Ring & Glass Texture */}
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 text-slate-200 font-semibold">
               <Clock className="w-3.5 h-3.5 text-amber-300" />
               <span>時計のフォント・ガラス質感</span>
             </span>
-            <button
-              type="button"
-              onClick={() =>
-                onChange((p) => ({ ...p, showAnalogRing: !p.showAnalogRing }))
-              }
-              className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors cursor-pointer ${
-                state.showAnalogRing
-                  ? 'bg-amber-400/15 text-amber-300 border-amber-400/40'
-                  : 'bg-slate-900 text-slate-400 border-slate-800'
-              }`}
-            >
-              {state.showAnalogRing ? '60秒リング: ON' : '60秒リング: OFF'}
-            </button>
+            <div className="flex items-center gap-1.5">
+              {isAbyssal && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    onChange((p) => ({
+                      ...p,
+                      showClockOverlay: !p.showClockOverlay,
+                    }))
+                  }
+                  className={`px-2 py-1 rounded-md text-[11px] font-medium border transition-colors cursor-pointer ${
+                    state.showClockOverlay
+                      ? 'bg-cyan-400/15 text-cyan-300 border-cyan-400/40'
+                      : 'bg-slate-900 text-slate-400 border-slate-800'
+                  }`}
+                >
+                  {state.showClockOverlay ? '時計: 表示' : '時計: 非表示'}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() =>
+                  onChange((p) => ({ ...p, showAnalogRing: !p.showAnalogRing }))
+                }
+                className={`px-2 py-1 rounded-md text-[11px] font-medium border transition-colors cursor-pointer ${
+                  state.showAnalogRing
+                    ? 'bg-amber-400/15 text-amber-300 border-amber-400/40'
+                    : 'bg-slate-900 text-slate-400 border-slate-800'
+                }`}
+              >
+                {state.showAnalogRing ? 'リング: ON' : 'リング: OFF'}
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-slate-900 border border-slate-800">
@@ -190,24 +372,46 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
 
         <hr className="border-slate-800/80" />
 
-        {/* 2. Bonfire Soundscape & Spatial Reverb */}
+        {/* 3. Soundscape & Spatial Reverb */}
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 text-slate-200 font-semibold">
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
-              <span>焚き火の温度感 ＆ 深海リバーブ（残響）</span>
+              {isAbyssal ? (
+                <Waves className="w-3.5 h-3.5 text-cyan-400" />
+              ) : (
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
+              )}
+              <span>
+                {isAbyssal
+                  ? '深海の水音・気泡メロディ ＆ 空間残響'
+                  : '焚き火の温度感 ＆ 深海リバーブ（残響）'}
+              </span>
             </span>
           </div>
 
-          <SliderRow
-            label="焚き火の温度感（熾火 ↔ パチパチ薪火）"
-            valueText={`${Math.round(state.bonfireWarmth * 100)} %`}
-            min={0.1}
-            max={1.0}
-            step={0.05}
-            value={state.bonfireWarmth}
-            onChange={(v) => onChange((p) => ({ ...p, bonfireWarmth: v }))}
-          />
+          {isAbyssal ? (
+            <SliderRow
+              label="水深トーン（浅瀬の泡きらめき ↔ 深層海溝の響き）"
+              valueText={`${Math.round(state.abyssalDepthTone * 100)} %`}
+              min={0.1}
+              max={1.0}
+              step={0.05}
+              value={state.abyssalDepthTone}
+              onChange={(v) =>
+                onChange((p) => ({ ...p, abyssalDepthTone: v }))
+              }
+            />
+          ) : (
+            <SliderRow
+              label="焚き火の温度感（熾火 ↔ パチパチ薪火）"
+              valueText={`${Math.round(state.bonfireWarmth * 100)} %`}
+              min={0.1}
+              max={1.0}
+              step={0.05}
+              value={state.bonfireWarmth}
+              onChange={(v) => onChange((p) => ({ ...p, bonfireWarmth: v }))}
+            />
+          )}
 
           <SliderRow
             label="空間リバーブ・残響の深さ (e-Reverb)"
@@ -264,7 +468,7 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
 
         <hr className="border-slate-800/80" />
 
-        {/* 3. 27:18 (e = 2.718) Focus Timer */}
+        {/* 4. 27:18 (e = 2.718) Focus Timer */}
         <div className="flex items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 py-2.5">
           <div className="flex items-center gap-2 text-xs">
             <Timer className="w-4 h-4 text-sky-400 shrink-0" />
@@ -296,7 +500,7 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
 
         <hr className="border-slate-800/80" />
 
-        {/* 4. Color Palettes */}
+        {/* 5. Color Palettes */}
         <div className="space-y-2">
           <span className="text-xs text-slate-300 font-medium">色彩パレット</span>
           <div className="grid grid-cols-2 gap-1.5">
@@ -309,7 +513,7 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
                   onClick={() => onChange((prev) => ({ ...prev, paletteId: pal.id }))}
                   className={`flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     active
-                      ? 'bg-slate-800 text-slate-100 border-amber-400/60'
+                      ? 'bg-slate-800 text-slate-100 border-cyan-400/60'
                       : 'bg-slate-900/70 text-slate-400 border-slate-800 hover:text-slate-200'
                   }`}
                 >
@@ -328,7 +532,7 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
 
         <hr className="border-slate-800/80" />
 
-        {/* 5. Sumie's Logarithmic Spiral & Bonfire Parameters */}
+        {/* 6. Sumie's Logarithmic Spiral & Anti-Gravity Parameters */}
         <div className="space-y-3.5">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-semibold text-slate-200">
@@ -340,7 +544,9 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
                 onChange((p) => ({
                   ...p,
                   ...SUMIE_GOLDEN_PRESET,
+                  sceneMode: p.sceneMode,
                   bonfireSound: p.bonfireSound,
+                  abyssalSound: p.abyssalSound,
                 }))
               }
               className="text-[11px] font-mono text-amber-300 hover:text-amber-200 underline underline-offset-4 cursor-pointer whitespace-nowrap"
@@ -360,7 +566,7 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
           />
 
           <SliderRow
-            label="反重力リフト (Anti-Gravity)"
+            label="反重力リフト・海流速度 (Anti-Gravity)"
             valueText={`${state.antiGravityLift.toFixed(3)} G`}
             min={0.4}
             max={2.718}
@@ -369,25 +575,29 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
             onChange={(v) => onChange((p) => ({ ...p, antiGravityLift: v }))}
           />
 
-          <SliderRow
-            label="深層フィラメント結合距離"
-            valueText={`${state.filamentWeb} px`}
-            min={0}
-            max={150}
-            step={5}
-            value={state.filamentWeb}
-            onChange={(v) => onChange((p) => ({ ...p, filamentWeb: v }))}
-          />
+          {!isAbyssal && (
+            <>
+              <SliderRow
+                label="深層フィラメント結合距離"
+                valueText={`${state.filamentWeb} px`}
+                min={0}
+                max={150}
+                step={5}
+                value={state.filamentWeb}
+                onChange={(v) => onChange((p) => ({ ...p, filamentWeb: v }))}
+              />
 
-          <SliderRow
-            label="粒子グレイン質感強度"
-            valueText={`${Math.round(state.tactileGrain * 100)} %`}
-            min={0}
-            max={1.0}
-            step={0.05}
-            value={state.tactileGrain}
-            onChange={(v) => onChange((p) => ({ ...p, tactileGrain: v }))}
-          />
+              <SliderRow
+                label="粒子グレイン質感強度"
+                valueText={`${Math.round(state.tactileGrain * 100)} %`}
+                min={0}
+                max={1.0}
+                step={0.05}
+                value={state.tactileGrain}
+                onChange={(v) => onChange((p) => ({ ...p, tactileGrain: v }))}
+              />
+            </>
+          )}
         </div>
       </div>
 

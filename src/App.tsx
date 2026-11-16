@@ -7,14 +7,17 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Download,
   EyeOff,
+  Fish,
   Flame,
   Maximize,
   SlidersHorizontal,
   Smartphone,
   Sparkles,
   Timer,
+  Waves,
   X,
 } from 'lucide-react';
+import { AbyssalAquariumCanvas } from './components/AbyssalAquariumCanvas';
 import { ControlDeck } from './components/ControlDeck';
 import { HtmlSourceModal } from './components/HtmlSourceModal';
 import { InteractiveCanvas } from './components/InteractiveCanvas';
@@ -49,6 +52,8 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const canvasElementRef = useRef<HTMLCanvasElement | null>(null);
+
+  const isAbyssal = clockState.sceneMode === 'abyssal';
 
   const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
@@ -122,44 +127,80 @@ export default function App() {
   );
 
   const handleDownloadHtml = useCallback(() => {
+    const filename =
+      clockState.sceneMode === 'abyssal'
+        ? 'abyssal-2718-aquarium.html'
+        : 'napier-2718-clock.html';
     const blob = new Blob([standaloneHtml], { type: 'text/html;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = 'napier-2718-clock.html';
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showToast('napier-2718-clock.html を保存しました');
-  }, [standaloneHtml, showToast]);
+    showToast(`${filename} を保存しました ✨`);
+  }, [clockState.sceneMode, standaloneHtml, showToast]);
 
   const handleSavePng = useCallback(() => {
     const canvas = canvasElementRef.current;
     if (!canvas) return;
+    const filename =
+      clockState.sceneMode === 'abyssal'
+        ? 'abyssal-2718-aquarium.png'
+        : 'napier-2718-clock.png';
     const dataUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.href = dataUrl;
-    link.download = 'napier-2718-clock.png';
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showToast('napier-2718-clock.png を保存しました');
-  }, [showToast]);
+    showToast(`${filename} を保存しました`);
+  }, [clockState.sceneMode, showToast]);
 
   const handleToggleFullscreen = useCallback(() => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {
         setUiHidden(true);
-        showToast('時計のみの常時表示ビューに切り替えました');
+        showToast('時計・水槽のみの常時表示ビューに切り替えました');
       });
     } else {
       document.exitFullscreen().catch(() => {});
     }
   }, [showToast]);
 
+  const handleSwitchMode = useCallback(
+    (targetMode: 'abyssal' | 'bonfire') => {
+      setClockState((prev) => {
+        if (prev.sceneMode === targetMode) return prev;
+        const nextPalette =
+          targetMode === 'abyssal'
+            ? prev.paletteId === 'napier_gold' || prev.paletteId === 'bonfire_hearth'
+              ? 'abyssal_garden'
+              : prev.paletteId
+            : prev.paletteId === 'abyssal_garden'
+            ? 'napier_gold'
+            : prev.paletteId;
+
+        return {
+          ...prev,
+          sceneMode: targetMode,
+          paletteId: nextPalette,
+        };
+      });
+      showToast(
+        targetMode === 'abyssal'
+          ? '🐋 2.718 深海水槽 (Abyssal Garden) に切り替えました'
+          : '🔥 2.718 焚き火時計 (Napier Sun) に切り替えました'
+      );
+    },
+    [showToast]
+  );
+
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#060913] text-slate-100 flex flex-col">
+    <div className="relative w-screen h-screen overflow-hidden bg-[#03101f] text-slate-100 flex flex-col">
       {/* Minimal Floating Top Bar (Hidden when in pure ambient mode) */}
       {!uiHidden && (
         <header className="fixed top-0 inset-x-0 z-30 flex items-center justify-between gap-6 px-5 py-3 bg-gradient-to-b from-slate-950/80 via-slate-950/35 to-transparent pointer-events-none">
@@ -172,11 +213,35 @@ export default function App() {
             }}
             className="pointer-events-auto font-display text-base font-bold tracking-tight text-slate-100/95 whitespace-nowrap shrink-0"
           >
-            Napier 2.718 Clock
+            {isAbyssal ? '2.718 Abyssal Garden' : 'Napier 2.718 Clock'}
           </a>
 
-          {/* Zone 2: Quick Style Switcher Links */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-300/85 pointer-events-auto">
+          {/* Zone 2: Mode & Typography Switcher Links */}
+          <nav className="hidden md:flex items-center gap-5 text-xs font-medium text-slate-300/85 pointer-events-auto">
+            <a
+              href="#abyssal"
+              onClick={(e) => {
+                e.preventDefault();
+                handleSwitchMode('abyssal');
+              }}
+              className={`transition-colors whitespace-nowrap shrink-0 hover:text-white ${
+                isAbyssal ? 'text-cyan-300 underline underline-offset-4 font-semibold' : ''
+              }`}
+            >
+              🐋 深海水槽 (3D)
+            </a>
+            <a
+              href="#bonfire"
+              onClick={(e) => {
+                e.preventDefault();
+                handleSwitchMode('bonfire');
+              }}
+              className={`transition-colors whitespace-nowrap shrink-0 hover:text-white ${
+                !isAbyssal ? 'text-amber-300 underline underline-offset-4 font-semibold' : ''
+              }`}
+            >
+              🔥 焚き火時計
+            </a>
             <a
               href="#sans"
               onClick={(e) => {
@@ -184,7 +249,7 @@ export default function App() {
                 setClockState((p) => ({ ...p, clockFont: 'sans' }));
               }}
               className={`transition-colors whitespace-nowrap shrink-0 hover:text-white ${
-                clockState.clockFont === 'sans' ? 'text-amber-300 underline underline-offset-4' : ''
+                clockState.clockFont === 'sans' ? 'text-white underline underline-offset-4' : ''
               }`}
             >
               モダン文字盤
@@ -196,32 +261,10 @@ export default function App() {
                 setClockState((p) => ({ ...p, clockFont: 'serif' }));
               }}
               className={`transition-colors whitespace-nowrap shrink-0 hover:text-white ${
-                clockState.clockFont === 'serif' ? 'text-amber-300 underline underline-offset-4' : ''
+                clockState.clockFont === 'serif' ? 'text-white underline underline-offset-4' : ''
               }`}
             >
-              映画・灯台セリフ体
-            </a>
-            <a
-              href="#mono"
-              onClick={(e) => {
-                e.preventDefault();
-                setClockState((p) => ({ ...p, clockFont: 'mono' }));
-              }}
-              className={`transition-colors whitespace-nowrap shrink-0 hover:text-white ${
-                clockState.clockFont === 'mono' ? 'text-amber-300 underline underline-offset-4' : ''
-              }`}
-            >
-              数理モノスペース
-            </a>
-            <a
-              href="#icon"
-              onClick={(e) => {
-                e.preventDefault();
-                setIsHomeIconModalOpen(true);
-              }}
-              className="transition-colors whitespace-nowrap shrink-0 hover:text-white"
-            >
-              ホームアイコン
+              灯台セリフ体
             </a>
             <a
               href="#source"
@@ -240,67 +283,136 @@ export default function App() {
             <button
               type="button"
               onClick={handleDownloadHtml}
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-950 bg-amber-300 rounded-lg hover:bg-amber-200 transition-colors whitespace-nowrap shrink-0 cursor-pointer shadow-lg"
+              className={`flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-950 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer shadow-lg ${
+                isAbyssal
+                  ? 'bg-cyan-300 hover:bg-cyan-200'
+                  : 'bg-amber-300 hover:bg-amber-200'
+              }`}
             >
               <Download className="w-3.5 h-3.5" />
-              <span>時計HTMLを保存</span>
+              <span>{isAbyssal ? '水槽HTMLを保存' : '時計HTMLを保存'}</span>
             </button>
           </div>
         </header>
       )}
 
-      {/* Full-Viewport 2.718 Bonfire & Logarithmic Spiral Clock Stage */}
+      {/* Full-Viewport 3D Abyssal Aquarium OR 2.718 Bonfire Clock Stage */}
       <main className="w-full h-full flex-1">
-        <InteractiveCanvas
-          state={clockState}
-          resetSignal={resetSignal}
-          uiHidden={uiHidden}
-          onToggleUiHidden={() => {
-            setUiHidden((prev) => !prev);
-            setIsDrawerOpen(false);
-          }}
-          canvasRefOut={canvasElementRef}
-        />
+        {isAbyssal ? (
+          <AbyssalAquariumCanvas
+            state={clockState}
+            resetSignal={resetSignal}
+            uiHidden={uiHidden}
+            onToggleUiHidden={() => {
+              setUiHidden((prev) => !prev);
+              setIsDrawerOpen(false);
+            }}
+            onChangeState={setClockState}
+            canvasRefOut={canvasElementRef}
+          />
+        ) : (
+          <InteractiveCanvas
+            state={clockState}
+            resetSignal={resetSignal}
+            uiHidden={uiHidden}
+            onToggleUiHidden={() => {
+              setUiHidden((prev) => !prev);
+              setIsDrawerOpen(false);
+            }}
+            canvasRefOut={canvasElementRef}
+          />
+        )}
       </main>
 
       {/* Sleek Bottom Floating Ambient Dock (Hides completely for iPad always-on display) */}
       {!uiHidden && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-3 py-2 rounded-2xl bg-slate-950/75 border border-white/10 backdrop-blur-xl shadow-2xl max-w-[95vw] overflow-x-auto">
-          {/* 1. Bonfire Crackle Sound Toggle */}
+          {/* 1. World Switcher (Abyssal Aquarium <-> Bonfire Clock) */}
           <button
             type="button"
-            onClick={() => {
-              soundEngine.unlockAudio();
-              setClockState((p) => ({
-                ...p,
-                soundEnabled: true,
-                bonfireSound: !p.bonfireSound,
-              }));
-            }}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-              clockState.bonfireSound
-                ? 'bg-amber-500/20 text-amber-200 border-amber-400/50'
-                : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:text-white'
+            onClick={() => handleSwitchMode(isAbyssal ? 'bonfire' : 'abyssal')}
+            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+              isAbyssal
+                ? 'bg-amber-500/15 text-amber-200 border-amber-400/40 hover:bg-amber-500/25'
+                : 'bg-cyan-500/20 text-cyan-200 border-cyan-400/50 hover:bg-cyan-500/30'
             }`}
           >
-            <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span>{clockState.bonfireSound ? '焚き火音: ON' : '焚き火音を鳴らす'}</span>
+            {isAbyssal ? (
+              <>
+                <Flame className="w-3.5 h-3.5 text-amber-400" />
+                <span>焚き火時計へ切替</span>
+              </>
+            ) : (
+              <>
+                <Fish className="w-3.5 h-3.5 text-cyan-300" />
+                <span>深海水槽へ切替</span>
+              </>
+            )}
           </button>
 
-          {/* 2. Reverb Chime Preview */}
+          {/* 2. Signature Ambient Sound Toggle (Abyssal Ocean Sound or Bonfire Crackle) */}
+          {isAbyssal ? (
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.unlockAudio();
+                setClockState((p) => ({
+                  ...p,
+                  soundEnabled: true,
+                  abyssalSound: !p.abyssalSound,
+                  bonfireSound: false,
+                }));
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                clockState.abyssalSound
+                  ? 'bg-cyan-500/25 text-cyan-100 border-cyan-400/60'
+                  : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:text-white'
+              }`}
+            >
+              <Waves className="w-3.5 h-3.5 text-cyan-300" />
+              <span>
+                {clockState.abyssalSound ? '深海音: ON' : '深海音を鳴らす'}
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                soundEngine.unlockAudio();
+                setClockState((p) => ({
+                  ...p,
+                  soundEnabled: true,
+                  bonfireSound: !p.bonfireSound,
+                  abyssalSound: false,
+                }));
+              }}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                clockState.bonfireSound
+                  ? 'bg-amber-500/20 text-amber-200 border-amber-400/50'
+                  : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:text-white'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5 text-amber-400" />
+              <span>
+                {clockState.bonfireSound ? '焚き火音: ON' : '焚き火音を鳴らす'}
+              </span>
+            </button>
+          )}
+
+          {/* 3. Reverb Chime Preview */}
           <button
             type="button"
             onClick={() => {
               soundEngine.unlockAudio();
               soundEngine.playClockBell(true, false);
             }}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-900/80 text-slate-300 hover:text-amber-200 border border-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-900/80 text-slate-300 hover:text-cyan-200 border border-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5 text-sky-400" />
             <span>残響チャイム</span>
           </button>
 
-          {/* 3. 27:18 Focus Timer Quick Button */}
+          {/* 4. 27:18 Focus Timer Quick Button */}
           <button
             type="button"
             onClick={() => {
@@ -322,21 +434,21 @@ export default function App() {
             <span>{clockState.timerActive ? '27:18 計測中' : '27:18 タイマー'}</span>
           </button>
 
-          {/* 4. Settings Drawer Toggle */}
+          {/* 5. Settings Drawer Toggle */}
           <button
             type="button"
             onClick={() => setIsDrawerOpen((prev) => !prev)}
             className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-medium border transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
               isDrawerOpen
-                ? 'bg-slate-800 text-amber-300 border-amber-400/50'
+                ? 'bg-slate-800 text-cyan-300 border-cyan-400/50'
                 : 'bg-slate-900/80 text-slate-200 border-slate-800 hover:bg-slate-800'
             }`}
           >
             <SlidersHorizontal className="w-3.5 h-3.5" />
-            <span>質感・音の調整</span>
+            <span>{isAbyssal ? '水槽・音の調整' : '質感・音の調整'}</span>
           </button>
 
-          {/* 5. Home Screen Icon & Install Guide */}
+          {/* 6. Home Screen Icon & Install Guide */}
           <button
             type="button"
             onClick={() => setIsHomeIconModalOpen(true)}
@@ -346,7 +458,7 @@ export default function App() {
             <span>ホームアイコン</span>
           </button>
 
-          {/* 6. Pure Clock View (Hide UI for iPad Always-On) */}
+          {/* 7. Pure View (Hide UI for iPad Always-On) */}
           <button
             type="button"
             onClick={() => {
@@ -354,13 +466,13 @@ export default function App() {
               setIsDrawerOpen(false);
             }}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium bg-slate-900/80 text-slate-300 hover:text-white border border-slate-800 transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-            title="ボタンを隠して時計だけにする（ダブルタップでも切替可能）"
+            title="ボタンを隠して水槽と時計だけにする（ダブルタップでも切替可能）"
           >
             <EyeOff className="w-3.5 h-3.5" />
-            <span>時計のみ表示</span>
+            <span>画面のみ表示</span>
           </button>
 
-          {/* 7. Fullscreen */}
+          {/* 8. Fullscreen */}
           <button
             type="button"
             onClick={handleToggleFullscreen}
@@ -408,24 +520,26 @@ export default function App() {
             <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-950 border border-slate-800">
               <img
                 src={`${import.meta.env.BASE_URL}apple-touch-icon.png`}
-                alt="2.718 焚き火時計 ホームアイコン"
+                alt="2.718 時計・深海水槽 ホームアイコン"
                 referrerPolicy="no-referrer"
                 className="w-20 h-20 rounded-2xl shadow-lg border border-white/10 shrink-0"
               />
               <div className="space-y-1">
-                <div className="text-sm font-semibold text-white">2.718 時計</div>
+                <div className="text-sm font-semibold text-white">
+                  2.718 深海水槽 ＆ 焚き火時計
+                </div>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  iPadOS / iOS 用の <code className="text-amber-300 font-mono">apple-touch-icon.png</code> と <code className="text-amber-300 font-mono">icon.svg</code>、PWA マニフェストをすべて組み込み済みです。
+                  iPadOS / iOS 用の <code className="text-cyan-300 font-mono">apple-touch-icon.png</code> と単体HTML用アイコン自動生成スクリプトを組み込み済みです。
                 </p>
               </div>
             </div>
 
             <div className="space-y-2 text-xs text-slate-300 leading-relaxed bg-slate-950/60 p-4 rounded-xl border border-slate-800/80">
-              <p className="font-semibold text-amber-300">📱 iPad のホーム画面に追加するとき：</p>
+              <p className="font-semibold text-cyan-300">📱 iPad のホーム画面に追加するとき：</p>
               <ol className="list-decimal list-inside space-y-1 text-slate-300">
                 <li>19 に GitHub Pages などで公開してもらうか、共有URLを Safari で開きます。</li>
                 <li>Safari 右上の <strong>共有マーク（四角から上矢印）</strong> をタップします。</li>
-                <li><strong>「ホーム画面に追加」</strong> を選ぶと、上のアイコンでホーム画面に並びます！</li>
+                <li><strong>「ホーム画面に追加」</strong> を選ぶと、iPad の置き時計＆深海水槽になります！</li>
               </ol>
             </div>
 
@@ -453,7 +567,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setIsHomeIconModalOpen(false)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-amber-300 text-slate-950 hover:bg-amber-200 cursor-pointer"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-cyan-300 text-slate-950 hover:bg-cyan-200 cursor-pointer"
               >
                 閉じる
               </button>
@@ -466,7 +580,7 @@ export default function App() {
       {toastMessage && (
         <div
           role="status"
-          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-slate-900/95 border border-amber-400/40 text-xs font-medium text-slate-100 shadow-lg backdrop-blur-md"
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-slate-900/95 border border-cyan-400/40 text-xs font-medium text-slate-100 shadow-lg backdrop-blur-md"
         >
           {toastMessage}
         </div>
