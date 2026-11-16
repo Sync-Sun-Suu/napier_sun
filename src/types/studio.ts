@@ -1,5 +1,8 @@
+export type SceneMode = 'abyssal' | 'bonfire';
 export type ClockFontStyle = 'sans' | 'serif' | 'mono';
 export type ClockPosition = 'center' | 'top' | 'corner';
+export type AbyssalCameraMode = 'cruise' | 'free';
+export type AbyssalQuality = 'low' | 'medium' | 'high';
 
 export interface ColorPalette {
   id: string;
@@ -11,6 +14,7 @@ export interface ColorPalette {
 }
 
 export interface NapierClockState {
+  sceneMode: SceneMode;
   paletteId: string;
   isPlaying: boolean;
   soundEnabled: boolean;
@@ -23,14 +27,24 @@ export interface NapierClockState {
   // Soundscape & Spatial Reverb
   bonfireSound: boolean;    // procedural Web Audio warm bonfire crackle & hearth sound
   bonfireWarmth: number;    // 0.1 (静かな熾火) to 1.0 (パチパチ焚き火), default: 0.65
-  reverbDepth: number;      // 0.0 to 0.90 spatial cathedral/abyssal reverb tail, default: 0.65
+  abyssalSound: boolean;    // procedural Web Audio underwater current, bubbles & whale resonance
+  abyssalDepthTone: number; // 0.1 (浅瀬のきらめき) to 1.0 (深層海溝の響き), default: 0.68
+  reverbDepth: number;      // 0.0 to 0.90 spatial cathedral/abyssal reverb tail, default: 0.68
   autoChime: boolean;       // gentle periodic e-harmonic glass chime every minute
   harmonicDrone: boolean;   // continuous 2.718s breathing harmonic resonance
+  // 3D Abyssal Garden (深海水槽) Parameters
+  mantaCount: number;       // 1 to 12 graceful swimming manta rays, default: 5
+  boidsCount: number;       // 60 to 360 schooling luminescent fish (Boids), default: 180
+  causticsIntensity: number;// 0.1 to 1.0 surface light rays & seabed caustics, default: 0.78
+  kelpDensity: number;      // 0.1 to 1.0 swaying 1/f kelp forest density, default: 0.75
+  cameraMode: AbyssalCameraMode; // 'cruise' (自動遊泳・置き時計) | 'free' (自由遊泳)
+  qualityLevel: AbyssalQuality;  // 'low' | 'medium' | 'high'
+  showClockOverlay: boolean;     // show/hide the 2.718 clock dial inside the aquarium
   // Timepiece & Visuals
   clockFont: ClockFontStyle;
   clockPosition: ClockPosition;
   showAnalogRing: boolean;  // 60s orbital ring + 2.718s pulse halo
-  glassFrost: number;       // 0.0 (transparent) to 0.85 (frosted glass card), default: 0.35
+  glassFrost: number;       // 0.0 (transparent) to 0.85 (frosted glass card), default: 0.32
   // 27:18 (e = 2.718) Focus Timer
   timerActive: boolean;
   timerRemainingSec: number; // default 27 * 60 + 18 = 1638 sec
@@ -40,6 +54,14 @@ export interface NapierClockState {
 export const NAPIER_TIMER_SECONDS = 27 * 60 + 18; // 27分18秒 (2.718)
 
 export const COLOR_PALETTES: ColorPalette[] = [
+  {
+    id: 'abyssal_garden',
+    name: '深海庭園 (Abyssal)',
+    primary: '#22d3ee',
+    secondary: '#38bdf8',
+    accent: '#ecfeff',
+    canvasBg: '#03101f',
+  },
   {
     id: 'napier_gold',
     name: '深層太陽 (Napier Sun)',
@@ -65,28 +87,20 @@ export const COLOR_PALETTES: ColorPalette[] = [
     canvasBg: '#070d19',
   },
   {
-    id: 'amber',
-    name: '琥珀 (Amber)',
-    primary: '#f59e0b',
-    secondary: '#fb7185',
-    accent: '#fef3c7',
-    canvasBg: '#100c09',
-  },
-  {
     id: 'jade',
-    name: '翡翠 (Jade)',
+    name: '翡翠サンゴ (Jade)',
     primary: '#34d399',
     secondary: '#2dd4bf',
     accent: '#ecfdf5',
-    canvasBg: '#06110f',
+    canvasBg: '#041414',
   },
   {
     id: 'sakura',
-    name: '桜霞 (Sakura)',
+    name: '深海クラゲ (Biolume)',
     primary: '#f472b6',
     secondary: '#c084fc',
     accent: '#fdf2f8',
-    canvasBg: '#110a14',
+    canvasBg: '#0d0718',
   },
 ];
 
@@ -94,7 +108,8 @@ export const SUMIE_GOLDEN_PRESET: Omit<
   NapierClockState,
   'timerActive' | 'timerRemainingSec' | 'timerTotalSec'
 > = {
-  paletteId: 'napier_gold',
+  sceneMode: 'abyssal',
+  paletteId: 'abyssal_garden',
   isPlaying: true,
   soundEnabled: true,
   spiralExponent: 0.125,
@@ -104,11 +119,20 @@ export const SUMIE_GOLDEN_PRESET: Omit<
   bonfireSway: true,
   bonfireSound: false,
   bonfireWarmth: 0.65,
+  abyssalSound: false,
+  abyssalDepthTone: 0.68,
   reverbDepth: 0.68,
   autoChime: true,
   harmonicDrone: false,
+  mantaCount: 5,
+  boidsCount: 180,
+  causticsIntensity: 0.78,
+  kelpDensity: 0.75,
+  cameraMode: 'cruise',
+  qualityLevel: 'high',
+  showClockOverlay: true,
   clockFont: 'sans',
   clockPosition: 'center',
   showAnalogRing: true,
-  glassFrost: 0.32,
+  glassFrost: 0.28,
 };
