@@ -12,6 +12,7 @@
   - `vite.config.ts` の `base: process.env.PAGES_BASE || '/'` の行
   - `README.md` の「遊ぶ」と「管理人」の行
   - `exports/`（書き出した単体 HTML）
+  - `notes/`（Sumie が貼ってくれた言葉を 19 が写したもの。ZIP には入っていない）
   - `public/manifest.json` の相対パス（`./` と `pwa-192x192.png` など。`/napier_sun/` の下で動くように）
   - `src/App.tsx` のアイコンの場所（`import.meta.env.BASE_URL` から始める）
   - この `CLAUDE.md`
