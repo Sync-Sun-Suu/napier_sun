@@ -1,10 +1,418 @@
 import { COLOR_PALETTES, NapierClockState } from '../types/studio';
 
 export function generateStandaloneHtml(state: NapierClockState): string {
+  if (state.sceneMode === 'galaxy') {
+    return generateGalaxyStandaloneHtml(state);
+  }
   if (state.sceneMode === 'abyssal') {
     return generateAbyssalStandaloneHtml(state);
   }
   return generateBonfireStandaloneHtml(state);
+}
+
+function generateGalaxyStandaloneHtml(state: NapierClockState): string {
+  const palette =
+    COLOR_PALETTES.find((p) => p.id === state.paletteId) || COLOR_PALETTES[0];
+
+  const fontStack =
+    state.clockFont === 'serif'
+      ? "'Cormorant Garamond', 'Shippori Mincho', Georgia, serif"
+      : state.clockFont === 'mono'
+      ? "'IBM Plex Mono', monospace"
+      : "'Outfit', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', sans-serif";
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="2.718 星屑銀河" />
+  <meta name="theme-color" content="${palette.canvasBg}" />
+  <link id="apple-icon-link" rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <title>2.718 星屑の銀河 — Stardust_galaxy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Mono:wght@400;600&family=Outfit:wght@500;600;700&family=Shippori+Mincho:wght@500;600&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: ${palette.canvasBg};
+      color: #f8fafc;
+      font-family: ${fontStack};
+      overflow: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    canvas { display: block; width: 100vw; height: 100vh; cursor: grab; touch-action: none; }
+    canvas:active { cursor: grabbing; }
+    .clock-center {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .clock-center.hidden { opacity: 0; }
+    .clock-dial {
+      position: relative;
+      width: 316px;
+      height: 316px;
+      border-radius: 9999px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(4, 6, 17, ${state.glassFrost});
+      backdrop-filter: blur(${Math.round(state.glassFrost * 20)}px);
+      -webkit-backdrop-filter: blur(${Math.round(state.glassFrost * 20)}px);
+      border: 1px solid rgba(196, 181, 253, ${state.glassFrost > 0.05 ? 0.16 : 0});
+      font-variant-numeric: tabular-nums;
+    }
+    .clock-dial svg { position: absolute; inset: 0; }
+    .clock-date {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      color: rgba(237, 233, 254, 0.85);
+    }
+    .clock-row {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .clock-hm {
+      font-size: 66px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.96);
+      text-shadow: 0 2px 28px ${palette.primary}55;
+      line-height: 1.05;
+    }
+    .clock-s {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 19px;
+      color: ${palette.primary};
+      width: 2.4ch;
+      text-align: left;
+    }
+    .clock-sub {
+      margin-top: 8px;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 0.11em;
+      color: rgba(221, 214, 254, 0.82);
+    }
+    .dock {
+      position: fixed;
+      bottom: 22px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 14px;
+      background: rgba(4, 6, 17, 0.78);
+      border: 1px solid rgba(196, 181, 253, 0.18);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: opacity 0.25s ease;
+    }
+    .dock.hidden { opacity: 0; pointer-events: none; }
+    .btn {
+      padding: 7px 12px;
+      border-radius: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(15, 23, 42, 0.75);
+      color: #e2e8f0;
+      font-size: 12px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn.active {
+      background: rgba(167, 139, 250, 0.24);
+      border-color: rgba(167, 139, 250, 0.6);
+      color: #ede9fe;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="stage"></canvas>
+  <div class="clock-center" id="clock-wrap">
+    <div class="clock-dial">
+      <svg width="316" height="316" viewBox="0 0 316 316">
+        <circle cx="158" cy="158" r="136" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1.25" />
+        <circle id="sec-arc" cx="158" cy="158" r="136" fill="none" stroke="${palette.primary}" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="854.5" stroke-dashoffset="854.5" transform="rotate(-90 158 158)" opacity="0.88" />
+        <circle id="sec-dot" cx="158" cy="22" r="3.5" fill="${palette.accent}" />
+      </svg>
+      <div class="clock-date" id="clock-date">2026.11.18 · WED</div>
+      <div class="clock-row">
+        <span class="clock-hm" id="clock-hm">00:00</span>
+        <span class="clock-s" id="clock-s">:00</span>
+      </div>
+      <div class="clock-sub" id="clock-sub">e ≈ 2.718 · b=${state.spiralExponent.toFixed(3)} · Stars=${state.galaxyStars}</div>
+    </div>
+  </div>
+
+  <div class="dock" id="dock">
+    <button class="btn" id="galaxy-btn">🌌 星屑メロディ</button>
+    <button class="btn" id="chime-btn">🔔 チャイム</button>
+    <button class="btn" id="timer-btn">⏳ 27:18</button>
+    <button class="btn" id="clock-toggle-btn">🕒 時計切替</button>
+    <button class="btn" id="hide-btn">画面のみ</button>
+  </div>
+
+  <script>
+    const STAR_COUNT = ${Math.min(2800, state.galaxyStars)};
+    const ARMS = ${state.galaxyArms};
+    const B_EXP = ${state.spiralExponent};
+    const LIFT = ${state.antiGravityLift};
+    const SHIMMER = ${state.galaxyShimmer};
+    const CONSTELLATION_WEB = ${state.galaxyConstellationDensity};
+    const NEBULA_DRONE = ${state.galaxyNebulaDrone};
+    const REVERB_AMT = ${state.reverbDepth};
+
+    const canvas = document.getElementById('stage');
+    const ctx = canvas.getContext('2d');
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+    window.addEventListener('resize', () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+    const CIRC = 2 * Math.PI * 136;
+    let timerActive = false, timerRem = 27 * 60 + 18, lastMin = -1;
+
+    setInterval(() => {
+      if (timerActive && timerRem > 0) {
+        timerRem--;
+        if (timerRem === 0) {
+          timerActive = false;
+          playBell(true);
+          document.getElementById('timer-btn').classList.remove('active');
+        }
+      }
+    }, 1000);
+
+    function updateClock() {
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mm = String(d.getMinutes()).padStart(2, '0');
+      const ss = String(d.getSeconds()).padStart(2, '0');
+      const ratio = (d.getSeconds() + d.getMilliseconds() / 1000) / 60;
+      document.getElementById('clock-hm').textContent = hh + ':' + mm;
+      document.getElementById('clock-s').textContent = ':' + ss;
+      document.getElementById('clock-date').textContent =
+        d.getFullYear() + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + String(d.getDate()).padStart(2, '0') + ' · ' + DAYS[d.getDay()];
+
+      const arc = document.getElementById('sec-arc');
+      const dot = document.getElementById('sec-dot');
+      if (arc) arc.setAttribute('stroke-dashoffset', String(CIRC * (1 - ratio)));
+      if (dot) {
+        const ang = ratio * Math.PI * 2 - Math.PI / 2;
+        dot.setAttribute('cx', String(158 + Math.cos(ang) * 136));
+        dot.setAttribute('cy', String(158 + Math.sin(ang) * 136));
+      }
+      if (timerActive) {
+        const tm = String(Math.floor(timerRem / 60)).padStart(2, '0');
+        const ts = String(timerRem % 60).padStart(2, '0');
+        document.getElementById('clock-sub').textContent = '2.718 TIMER · ' + tm + ':' + ts;
+      } else {
+        document.getElementById('clock-sub').textContent = 'e ≈ 2.718 · b=' + B_EXP.toFixed(3) + ' · Stars=' + STAR_COUNT;
+      }
+      if (d.getSeconds() === 0 && lastMin !== d.getMinutes()) {
+        lastMin = d.getMinutes();
+        playBell(false);
+      }
+    }
+    setInterval(updateClock, 60);
+    updateClock();
+
+    const STAR_SCALE = [293.66, 329.63, 370.0, 399.13, 440.0, 493.88, 554.37, 587.33, 659.25, 739.99, 798.26, 880.0, 987.77, 1174.66];
+    let audioCtx = null, conv = null, galaxyOn = false, galaxyTimer = null, padNodes = null, stepIdx = 0;
+
+    function ensureAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const len = Math.floor(audioCtx.sampleRate * 3.8);
+        const ir = audioCtx.createBuffer(2, len, audioCtx.sampleRate);
+        for (let c = 0; c < 2; c++) {
+          const ch = ir.getChannelData(c);
+          for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * Math.pow(Math.E, -(i / audioCtx.sampleRate) * 1.95) * 0.45;
+        }
+        conv = audioCtx.createConvolver(); conv.buffer = ir;
+        const wet = audioCtx.createGain(); wet.gain.value = REVERB_AMT * 0.88;
+        conv.connect(wet).connect(audioCtx.destination);
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function playStarNote(freq, peak, delaySec) {
+      try {
+        const c = ensureAudio();
+        const t0 = c.currentTime + (delaySec || 0);
+        const o1 = c.createOscillator(), o2 = c.createOscillator(), g1 = c.createGain(), g2 = c.createGain();
+        o1.type = 'sine'; o1.frequency.setValueAtTime(freq, t0);
+        o2.type = 'sine'; o2.frequency.setValueAtTime(freq * Math.E, t0);
+        g1.gain.setValueAtTime(0.0001, t0);
+        g1.gain.exponentialRampToValueAtTime(peak, t0 + 0.018);
+        g1.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.4);
+        g2.gain.setValueAtTime(0.0001, t0);
+        g2.gain.exponentialRampToValueAtTime(peak * 0.22, t0 + 0.01);
+        g2.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.6);
+        o1.connect(g1); o2.connect(g2);
+        g1.connect(c.destination); g2.connect(c.destination);
+        if (conv) { g1.connect(conv); g2.connect(conv); }
+        o1.start(t0); o2.start(t0);
+        o1.stop(t0 + 2.5); o2.stop(t0 + 0.65);
+      } catch (e) {}
+    }
+
+    function playBell(complete) {
+      if (!audioCtx) return;
+      const notes = complete ? [293.66, 399.13, 440.0, 587.33, 798.26] : [293.66, 440.0, 587.33];
+      notes.forEach((f, idx) => playStarNote(f, 0.04, idx * 0.16));
+    }
+
+    document.getElementById('galaxy-btn').addEventListener('click', (e) => {
+      const c = ensureAudio();
+      if (galaxyOn) {
+        clearInterval(galaxyTimer);
+        if (padNodes) { try { padNodes.o1.stop(); padNodes.o2.stop(); } catch (err) {} }
+        galaxyOn = false; e.target.classList.remove('active');
+        return;
+      }
+      const o1 = c.createOscillator(), o2 = c.createOscillator(), pg = c.createGain();
+      o1.type = 'sine'; o1.frequency.value = 146.83;
+      o2.type = 'triangle'; o2.frequency.value = 220.0;
+      pg.gain.value = NEBULA_DRONE <= 0.005 ? 0 : (0.003 + NEBULA_DRONE * 0.036);
+      o1.connect(pg); o2.connect(pg); pg.connect(c.destination); if (conv) pg.connect(conv);
+      o1.start(); o2.start();
+      padNodes = { o1, o2 };
+      galaxyTimer = setInterval(() => {
+        if (Math.random() < 0.35 + SHIMMER * 0.55) {
+          stepIdx = (stepIdx + (Math.random() < 0.65 ? 1 : -1) + STAR_SCALE.length) % STAR_SCALE.length;
+          playStarNote(STAR_SCALE[stepIdx], 0.018 + SHIMMER * 0.024, 0);
+          melodyPulse = 1.0;
+          if (Math.random() < 0.25 + SHIMMER * 0.25) playStarNote(STAR_SCALE[(stepIdx + 4) % STAR_SCALE.length], 0.014 + SHIMMER * 0.016, 0.22);
+        }
+      }, Math.max(260, Math.round(700 - SHIMMER * 340)));
+      galaxyOn = true; e.target.classList.add('active');
+    });
+
+    document.getElementById('chime-btn').addEventListener('click', () => { ensureAudio(); playBell(false); melodyPulse = 1.0; });
+    document.getElementById('timer-btn').addEventListener('click', (e) => {
+      ensureAudio(); timerActive = !timerActive; timerRem = 27 * 60 + 18;
+      e.target.classList.toggle('active', timerActive);
+    });
+    document.getElementById('clock-toggle-btn').addEventListener('click', () => {
+      document.getElementById('clock-wrap').classList.toggle('hidden');
+    });
+    document.getElementById('hide-btn').addEventListener('click', () => {
+      document.getElementById('dock').classList.add('hidden');
+    });
+    canvas.addEventListener('dblclick', () => {
+      document.getElementById('dock').classList.toggle('hidden');
+    });
+
+    let yaw = 0, pitch = 0.55, ptrDown = false, px = 0, py = 0, melodyPulse = 0;
+    canvas.addEventListener('pointerdown', (e) => {
+      ptrDown = true; px = e.clientX; py = e.clientY;
+      document.getElementById('dock').classList.remove('hidden');
+      const idx = Math.floor((e.clientX / Math.max(1, width)) * STAR_SCALE.length) % STAR_SCALE.length;
+      playStarNote(STAR_SCALE[idx], 0.045, 0);
+      melodyPulse = 1.0;
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!ptrDown) return;
+      yaw -= (e.clientX - px) * 0.0045;
+      pitch = Math.max(0.15, Math.min(1.3, pitch + (e.clientY - py) * 0.0035));
+      px = e.clientX; py = e.clientY;
+    });
+    window.addEventListener('pointerup', () => { ptrDown = false; });
+
+    const stars = Array.from({ length: STAR_COUNT }, (_, i) => {
+      const p = i / STAR_COUNT;
+      return {
+        arm: i % ARMS,
+        theta: 0.25 + p * Math.PI * 4.4,
+        jitter: (Math.random() - 0.5) * (0.45 + p * 1.4),
+        zAmp: (Math.random() - 0.5) * (0.5 + (1 - p) * 1.6),
+        speed: 0.42 / (0.35 + p * 1.45),
+        anchor: i % 10 === 0,
+        col: p < 0.22 ? '${palette.accent}' : (i % 2 === 0 ? '${palette.primary}' : '${palette.secondary}')
+      };
+    });
+
+    function loop(now) {
+      const t = now * 0.001;
+      melodyPulse *= 0.94;
+      ctx.fillStyle = '${palette.canvasBg}';
+      ctx.fillRect(0, 0, width, height);
+
+      const fov = Math.min(width, height) * 0.85;
+      const cosP = Math.cos(pitch), sinP = Math.sin(pitch);
+      const anchors = [];
+
+      for (let i = 0; i < stars.length; i++) {
+        const s = stars[i];
+        const r = Math.max(0.4, 1.65 * Math.exp(B_EXP * s.theta) + s.jitter);
+        const ang = s.theta + (s.arm / ARMS) * Math.PI * 2 - t * s.speed * LIFT + yaw;
+        const wx = Math.cos(ang) * r;
+        const wz = Math.sin(ang) * r;
+        const wy = Math.sin(t * 1.4 + s.theta) * s.zAmp * Math.exp(-r * 0.045);
+
+        const ry = wy * cosP - wz * sinP;
+        const rz = wy * sinP + wz * cosP + 26;
+        if (rz <= 1) continue;
+
+        const sx = width / 2 + (wx / rz) * fov;
+        const sy = height / 2 - (ry / rz) * fov;
+        const sz = Math.max(1.1, (fov / rz) * 0.065);
+
+        ctx.fillStyle = s.col;
+        ctx.globalAlpha = Math.min(0.92, (28 / rz) * 0.75);
+        ctx.beginPath();
+        ctx.arc(sx, sy, sz, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (s.anchor) anchors.push({ x: sx, y: sy, r });
+      }
+
+      if (CONSTELLATION_WEB > 0.02) {
+        ctx.strokeStyle = melodyPulse > 0.25 ? '${palette.accent}' : '${palette.primary}';
+        ctx.lineWidth = 0.75 + melodyPulse * 0.45;
+        const span = Math.max(3, Math.round(4 + CONSTELLATION_WEB * 10));
+        for (let i = 0; i < anchors.length; i++) {
+          const a = anchors[i];
+          const maxD = (68 + a.r * 3.8) * (0.55 + CONSTELLATION_WEB * 0.85);
+          let links = 0;
+          for (let j = i + 1; j < Math.min(anchors.length, i + span); j++) {
+            const b = anchors[j];
+            const d = Math.hypot(a.x - b.x, a.y - b.y);
+            if (d < maxD) {
+              ctx.globalAlpha = (1 - d / maxD) * (0.22 + CONSTELLATION_WEB * 0.25 + melodyPulse * 0.35);
+              ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+              if (++links >= 3) break;
+            }
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>`;
 }
 
 function generateAbyssalStandaloneHtml(state: NapierClockState): string {

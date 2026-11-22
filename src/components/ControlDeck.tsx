@@ -8,6 +8,7 @@ import {
   ImageDown,
   RotateCcw,
   Sparkles,
+  Stars,
   Timer,
   Waves,
   X,
@@ -19,6 +20,8 @@ import {
   COLOR_PALETTES,
   NAPIER_TIMER_SECONDS,
   NapierClockState,
+  SUMIE_BONFIRE_PRESET,
+  SUMIE_GALAXY_PRESET,
   SUMIE_GOLDEN_PRESET,
 } from '../types/studio';
 import { soundEngine } from '../utils/audio';
@@ -98,16 +101,20 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const isGalaxy = state.sceneMode === 'galaxy';
   const isAbyssal = state.sceneMode === 'abyssal';
+  const isBonfire = state.sceneMode === 'bonfire';
 
   return (
-    <aside className="fixed top-16 right-4 bottom-20 z-40 w-[360px] max-w-[calc(100vw-2rem)] flex flex-col justify-between rounded-2xl border border-slate-800/90 bg-slate-950/92 backdrop-blur-xl p-5 shadow-2xl overflow-y-auto">
+    <aside className="fixed top-16 right-4 bottom-20 z-40 w-[365px] max-w-[calc(100vw-2rem)] flex flex-col justify-between rounded-2xl border border-slate-800/90 bg-slate-950/92 backdrop-blur-xl p-5 shadow-2xl overflow-y-auto">
       <div className="space-y-5">
         {/* Drawer Header */}
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
           <div>
             <h2 className="text-sm font-semibold text-slate-100">
-              {isAbyssal
+              {isGalaxy
+                ? '2.718 星屑の銀河 (Stardust) 調整'
+                : isAbyssal
                 ? '2.718 深海水槽 (Abyssal) 調整'
                 : '2.718 焚き火時計 (Bonfire) 調整'}
             </h2>
@@ -125,28 +132,44 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
           </button>
         </div>
 
-        {/* 0. World Mode Switcher (Abyssal Aquarium vs Bonfire Clock) */}
-        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800">
+        {/* 0. World Mode Switcher (Stardust Galaxy vs Abyssal Aquarium vs Bonfire Clock) */}
+        <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800">
+          <button
+            type="button"
+            onClick={() =>
+              onChange((p) => ({
+                ...p,
+                sceneMode: 'galaxy',
+                paletteId: 'stardust_galaxy',
+              }))
+            }
+            className={`flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              isGalaxy
+                ? 'bg-violet-500/25 text-violet-200 border border-violet-400/50 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Stars className="w-3.5 h-3.5 text-violet-300" />
+            <span>🌌 星屑銀河</span>
+          </button>
+
           <button
             type="button"
             onClick={() =>
               onChange((p) => ({
                 ...p,
                 sceneMode: 'abyssal',
-                paletteId:
-                  p.paletteId === 'bonfire_hearth' || p.paletteId === 'napier_gold'
-                    ? 'abyssal_garden'
-                    : p.paletteId,
+                paletteId: 'abyssal_garden',
               }))
             }
-            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
               isAbyssal
                 ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-400/50 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Fish className="w-3.5 h-3.5 text-cyan-300" />
-            <span>🐋 深海水槽 (3D)</span>
+            <span>🐋 深海水槽</span>
           </button>
 
           <button
@@ -155,22 +178,97 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
               onChange((p) => ({
                 ...p,
                 sceneMode: 'bonfire',
-                paletteId:
-                  p.paletteId === 'abyssal_garden' ? 'napier_gold' : p.paletteId,
+                paletteId: 'napier_gold',
               }))
             }
-            className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              !isAbyssal
+            className={`flex items-center justify-center gap-1 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              isBonfire
                 ? 'bg-amber-500/20 text-amber-200 border border-amber-400/50 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
             <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span>🔥 焚き火時計</span>
+            <span>🔥 焚き火</span>
           </button>
         </div>
 
-        {/* 1. Abyssal 3D Ecosystem & Swim Controls (when in Abyssal Mode) */}
+        {/* 1A. Stardust Galaxy 3D Spiral Coordinates Controls */}
+        {isGalaxy && (
+          <div className="space-y-3.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="flex items-center gap-1.5 text-slate-200 font-semibold">
+                <Stars className="w-3.5 h-3.5 text-violet-300" />
+                <span>3D対数螺旋銀河（星座標・腕・星座線）</span>
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange((p) => ({
+                    ...p,
+                    cameraMode: p.cameraMode === 'cruise' ? 'free' : 'cruise',
+                  }))
+                }
+                className={`px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors cursor-pointer ${
+                  state.cameraMode === 'free'
+                    ? 'bg-violet-400/20 text-violet-200 border-violet-400/50'
+                    : 'bg-slate-900 text-slate-300 border-slate-800'
+                }`}
+              >
+                {state.cameraMode === 'free' ? '視点: 自由航行' : '視点: 周回クルーズ'}
+              </button>
+            </div>
+
+            <SliderRow
+              label="渦巻く星屑の座標数 (Star Coordinates)"
+              valueText={`${state.galaxyStars} 個`}
+              min={1200}
+              max={6000}
+              step={400}
+              value={state.galaxyStars}
+              onChange={(v) =>
+                onChange((p) => ({ ...p, galaxyStars: Math.round(v) }))
+              }
+            />
+
+            <SliderRow
+              label="対数螺旋の銀河腕の本数 (Spiral Arms)"
+              valueText={`${state.galaxyArms} 本`}
+              min={2}
+              max={6}
+              step={1}
+              value={state.galaxyArms}
+              onChange={(v) =>
+                onChange((p) => ({ ...p, galaxyArms: Math.round(v) }))
+              }
+            />
+
+            <SliderRow
+              label="銀河コア＆星座座標フィラメント輝度"
+              valueText={`${Math.round(state.galaxyCoreGlow * 100)} %`}
+              min={0.1}
+              max={1.0}
+              step={0.05}
+              value={state.galaxyCoreGlow}
+              onChange={(v) =>
+                onChange((p) => ({ ...p, galaxyCoreGlow: v }))
+              }
+            />
+
+            <SliderRow
+              label="星を繋ぐ星座線の密度・広がり (Constellation Web)"
+              valueText={`${Math.round((state.galaxyConstellationDensity ?? 0.85) * 100)} %`}
+              min={0.1}
+              max={1.0}
+              step={0.05}
+              value={state.galaxyConstellationDensity ?? 0.85}
+              onChange={(v) =>
+                onChange((p) => ({ ...p, galaxyConstellationDensity: v }))
+              }
+            />
+          </div>
+        )}
+
+        {/* 1B. Abyssal 3D Ecosystem & Swim Controls (when in Abyssal Mode) */}
         {isAbyssal && (
           <div className="space-y-3.5">
             <div className="flex items-center justify-between text-xs">
@@ -241,32 +339,34 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
               value={state.kelpDensity}
               onChange={(v) => onChange((p) => ({ ...p, kelpDensity: v }))}
             />
+          </div>
+        )}
 
-            <div className="space-y-1.5 pt-1">
-              <span className="text-[11px] text-slate-400">
-                3D描画クオリティ（iPad・スマホ負荷調整）
-              </span>
-              <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-slate-900 border border-slate-800">
-                {QUALITY_OPTIONS.map((q) => {
-                  const active = state.qualityLevel === q.value;
-                  return (
-                    <button
-                      key={q.value}
-                      type="button"
-                      onClick={() =>
-                        onChange((p) => ({ ...p, qualityLevel: q.value }))
-                      }
-                      className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
-                        active
-                          ? 'bg-slate-800 text-cyan-300 shadow-xs'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      {q.label}
-                    </button>
-                  );
-                })}
-              </div>
+        {(isGalaxy || isAbyssal) && (
+          <div className="space-y-1.5 pt-1">
+            <span className="text-[11px] text-slate-400">
+              3D描画クオリティ（iPad・スマホ負荷調整）
+            </span>
+            <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-slate-900 border border-slate-800">
+              {QUALITY_OPTIONS.map((q) => {
+                const active = state.qualityLevel === q.value;
+                return (
+                  <button
+                    key={q.value}
+                    type="button"
+                    onClick={() =>
+                      onChange((p) => ({ ...p, qualityLevel: q.value }))
+                    }
+                    className={`px-2 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
+                      active
+                        ? 'bg-slate-800 text-cyan-300 shadow-xs'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    {q.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
@@ -281,7 +381,7 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
               <span>時計のフォント・ガラス質感</span>
             </span>
             <div className="flex items-center gap-1.5">
-              {isAbyssal && (
+              {(isGalaxy || isAbyssal) && (
                 <button
                   type="button"
                   onClick={() =>
@@ -376,20 +476,50 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
         <div className="space-y-3">
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1.5 text-slate-200 font-semibold">
-              {isAbyssal ? (
+              {isGalaxy ? (
+                <Stars className="w-3.5 h-3.5 text-violet-400" />
+              ) : isAbyssal ? (
                 <Waves className="w-3.5 h-3.5 text-cyan-400" />
               ) : (
                 <Flame className="w-3.5 h-3.5 text-amber-400" />
               )}
               <span>
-                {isAbyssal
+                {isGalaxy
+                  ? '星屑オルゴール旋律 ＆ 星雲リバーブ'
+                  : isAbyssal
                   ? '深海の水音・気泡メロディ ＆ 空間残響'
                   : '焚き火の温度感 ＆ 深海リバーブ（残響）'}
               </span>
             </span>
           </div>
 
-          {isAbyssal ? (
+          {isGalaxy ? (
+            <>
+              <SliderRow
+                label="星屑が歌うメロディの量（星座オルゴール頻度）"
+                valueText={`${Math.round(state.galaxyShimmer * 100)} %`}
+                min={0.1}
+                max={1.0}
+                step={0.05}
+                value={state.galaxyShimmer}
+                onChange={(v) =>
+                  onChange((p) => ({ ...p, galaxyShimmer: v }))
+                }
+              />
+
+              <SliderRow
+                label="背景の星雲音（ぶーんという低音・0%で完全オフ）"
+                valueText={`${Math.round((state.galaxyNebulaDrone ?? 0.12) * 100)} %`}
+                min={0.0}
+                max={1.0}
+                step={0.04}
+                value={state.galaxyNebulaDrone ?? 0.12}
+                onChange={(v) =>
+                  onChange((p) => ({ ...p, galaxyNebulaDrone: v }))
+                }
+              />
+            </>
+          ) : isAbyssal ? (
             <SliderRow
               label="水深トーン（浅瀬の泡きらめき ↔ 深層海溝の響き）"
               valueText={`${Math.round(state.abyssalDepthTone * 100)} %`}
@@ -544,14 +674,26 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
                 onChange((p) => ({
                   ...p,
                   ...SUMIE_GOLDEN_PRESET,
+                  ...(p.sceneMode === 'galaxy'
+                    ? SUMIE_GALAXY_PRESET
+                    : SUMIE_BONFIRE_PRESET),
                   sceneMode: p.sceneMode,
+                  paletteId:
+                    p.sceneMode === 'galaxy'
+                      ? 'stardust_galaxy'
+                      : p.sceneMode === 'abyssal'
+                      ? 'abyssal_garden'
+                      : 'napier_gold',
                   bonfireSound: p.bonfireSound,
                   abyssalSound: p.abyssalSound,
+                  galaxySound: p.galaxySound,
                 }))
               }
               className="text-[11px] font-mono text-amber-300 hover:text-amber-200 underline underline-offset-4 cursor-pointer whitespace-nowrap"
             >
-              Sumie黄金設定 (0.125) に戻す
+              {isGalaxy
+                ? 'Sumie銀河設定 (b=0.320·0.4G) に戻す'
+                : 'Sumie黄金設定 (b=0.125·0.85G) に戻す'}
             </button>
           </div>
 
@@ -566,7 +708,7 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
           />
 
           <SliderRow
-            label="反重力リフト・海流速度 (Anti-Gravity)"
+            label="反重力リフト・銀河回転速度 (Anti-Gravity)"
             valueText={`${state.antiGravityLift.toFixed(3)} G`}
             min={0.4}
             max={2.718}
@@ -575,7 +717,7 @@ export const ControlDeck: React.FC<ControlDeckProps> = ({
             onChange={(v) => onChange((p) => ({ ...p, antiGravityLift: v }))}
           />
 
-          {!isAbyssal && (
+          {isBonfire && (
             <>
               <SliderRow
                 label="深層フィラメント結合距離"
