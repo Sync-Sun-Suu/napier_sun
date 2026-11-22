@@ -9,6 +9,33 @@ const ABYSSAL_BUBBLE_HZ = [
   293.66, 329.63, 399.13, 440.00, 523.25, 587.33, 659.25, 798.26, 880.00, 1085.0,
 ];
 
+// Celestial D-Lydian + 2.718 e-ratio Stardust Celesta scale for the singing galaxy
+const STARDUST_MELODY_HZ = [
+  293.66, // D4
+  329.63, // E4
+  370.00, // F#4
+  399.13, // D3 * e
+  440.00, // A4
+  493.88, // B4
+  554.37, // C#5
+  587.33, // D5
+  659.25, // E5
+  739.99, // F#5
+  798.26, // D4 * e
+  880.00, // A5
+  987.77, // B5
+  1174.66, // D6
+];
+
+// Poetic melodic phrases (indices into STARDUST_MELODY_HZ) that the galaxy occasionally sings
+const GALAXY_SONG_PHRASES: number[][] = [
+  [0, 4, 7, 8, 11],
+  [7, 6, 4, 2, 0],
+  [2, 4, 6, 9, 7],
+  [4, 7, 10, 11, 13],
+  [11, 9, 7, 4, 3, 0],
+];
+
 class NapierSoundEngine {
   private ctx: AudioContext | null = null;
   private convolver: ConvolverNode | null = null;
@@ -17,7 +44,12 @@ class NapierSoundEngine {
   private lastNoteTime = 0;
   private currentWarmth = 0.65;
   private currentAbyssalTone = 0.68;
-  private currentReverb = 0.68;
+  private currentGalaxyShimmer = 0.85;
+  private currentGalaxyDrone = 0.12;
+  private currentReverb = 0.95;
+  private melodyStepIndex = 0;
+  private lastStarPulseMs = 0;
+  private lastStarPulsePitch = 0.5;
 
   private droneNodes: {
     osc1: OscillatorNode;
@@ -43,6 +75,17 @@ class NapierSoundEngine {
     bubbleTimer: number;
   } | null = null;
 
+  private galaxyNodes: {
+    padOsc1: OscillatorNode;
+    padOsc2: OscillatorNode;
+    padOsc3: OscillatorNode;
+    padLfo: OscillatorNode;
+    padFilter: BiquadFilterNode;
+    padGain: GainNode;
+    masterGain: GainNode;
+    melodyTimer: number;
+  } | null = null;
+
   private ensureContext(): AudioContext | null {
     if (typeof window === 'undefined') return null;
     if (!this.ctx) {
@@ -64,7 +107,7 @@ class NapierSoundEngine {
    * Builds a stereo e-decay (2.718s time constant) impulse response for deep spatial reverb
    */
   private setupSpatialReverb(ctx: AudioContext): void {
-    const duration = 3.8;
+    const duration = 4.0;
     const length = Math.floor(ctx.sampleRate * duration);
     const impulse = ctx.createBuffer(2, length, ctx.sampleRate);
 
@@ -72,8 +115,8 @@ class NapierSoundEngine {
       const channelData = impulse.getChannelData(ch);
       for (let i = 0; i < length; i++) {
         const t = i / ctx.sampleRate;
-        // Exponential decay governed by Napier's constant e^(-t * 2.1)
-        const env = Math.pow(Math.E, -t * 2.05);
+        // Exponential decay governed by Napier's constant e^(-t * 1.95)
+        const env = Math.pow(Math.E, -t * 1.95);
         channelData[i] = (Math.random() * 2 - 1) * env * 0.45;
       }
     }
@@ -82,7 +125,7 @@ class NapierSoundEngine {
     convolver.buffer = impulse;
 
     const wetGain = ctx.createGain();
-    wetGain.gain.setValueAtTime(this.currentReverb * 0.85, ctx.currentTime);
+    wetGain.gain.setValueAtTime(this.currentReverb * 0.88, ctx.currentTime);
 
     const dryBus = ctx.createGain();
     dryBus.gain.setValueAtTime(1.0, ctx.currentTime);
@@ -115,7 +158,7 @@ class NapierSoundEngine {
     this.currentReverb = Math.max(0, Math.min(1, depth));
     if (this.ctx && this.reverbWetGain) {
       this.reverbWetGain.gain.setTargetAtTime(
-        this.currentReverb * 0.9,
+        this.currentReverb * 0.92,
         this.ctx.currentTime,
         0.08
       );
@@ -143,7 +186,6 @@ class NapierSoundEngine {
     this.currentAbyssalTone = Math.max(0.05, Math.min(1, tone));
     if (this.ctx && this.abyssalNodes) {
       const now = this.ctx.currentTime;
-      // Higher depth tone = deeper, warmer sub-aquatic filter; lower = brighter shallow reef
       const baseCutoff = 320 - this.currentAbyssalTone * 165;
       this.abyssalNodes.bandpass.frequency.setTargetAtTime(baseCutoff, now, 0.15);
       this.abyssalNodes.currentGain.gain.setTargetAtTime(
@@ -152,6 +194,41 @@ class NapierSoundEngine {
         0.15
       );
     }
+  }
+
+  public setGalaxyShimmer(shimmer: number): void {
+    this.currentGalaxyShimmer = Math.max(0.05, Math.min(1, shimmer));
+  }
+
+  public setGalaxyNebulaDrone(drone: number): void {
+    this.currentGalaxyDrone = Math.max(0, Math.min(1, drone));
+    if (this.ctx && this.galaxyNodes) {
+      const now = this.ctx.currentTime;
+      // 0% = 0.00001 (completely silent background hum), 100% = 0.065 (warm sleepy cosmic drone)
+      const targetGain =
+        this.currentGalaxyDrone <= 0.01
+          ? 0.00001
+          : this.currentGalaxyDrone * 0.065;
+      this.galaxyNodes.padGain.gain.setTargetAtTime(targetGain, now, 0.12);
+      this.galaxyNodes.padFilter.frequency.setTargetAtTime(
+        180 + this.currentGalaxyDrone * 320,
+        now,
+        0.15
+      );
+    }
+  }
+
+  /**
+   * Returns real-time visual pulse intensity (0..1) and normalized pitch (0..1) of the singing stars
+   * so the 3D Constellation Lines pulse in sync with the melody!
+   */
+  public getStarMelodyPulse(): { intensity: number; pitchNorm: number } {
+    const elapsedSec = (performance.now() - this.lastStarPulseMs) * 0.001;
+    if (elapsedSec < 0 || elapsedSec > 1.8) {
+      return { intensity: 0, pitchNorm: this.lastStarPulsePitch };
+    }
+    const intensity = Math.exp(-elapsedSec * 2.4);
+    return { intensity, pitchNorm: this.lastStarPulsePitch };
   }
 
   /**
@@ -237,7 +314,6 @@ class NapierSoundEngine {
     const baseFreq = ABYSSAL_BUBBLE_HZ[Math.max(0, idx)];
     const now = ctx.currentTime;
 
-    // 1. Soft rising bubble droplet (pitch upward glide)
     const dropOsc = ctx.createOscillator();
     const dropGain = ctx.createGain();
     dropOsc.type = 'sine';
@@ -248,7 +324,6 @@ class NapierSoundEngine {
     dropGain.gain.exponentialRampToValueAtTime(0.048, now + 0.015);
     dropGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
 
-    // 2. Deep aquatic e-harmonic shimmer tail
     const padOsc = ctx.createOscillator();
     const padGain = ctx.createGain();
     padOsc.type = 'sine';
@@ -267,6 +342,107 @@ class NapierSoundEngine {
     padOsc.start(now);
     dropOsc.stop(now + 0.35);
     padOsc.stop(now + 2.3);
+  }
+
+  /**
+   * Plays a crystalline starlight celesta/harp note when touching or scanning galaxy coordinates
+   */
+  public playStarlightTwinkle(
+    normX: number,
+    normY: number,
+    enabled: boolean,
+    minIntervalMs = 95
+  ): void {
+    if (!enabled) return;
+    const nowMs = performance.now();
+    if (nowMs - this.lastNoteTime < minIntervalMs) return;
+    this.lastNoteTime = nowMs;
+
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const clampedX = Math.max(0, Math.min(0.999, normX));
+    const clampedY = Math.max(0, Math.min(1, normY));
+    const idx =
+      Math.floor(((1 - clampedY) * 0.6 + clampedX * 0.4) * STARDUST_MELODY_HZ.length) %
+      STARDUST_MELODY_HZ.length;
+    const freq = STARDUST_MELODY_HZ[Math.max(0, idx)];
+    this.triggerStarNote(ctx, freq, 0.046, 0);
+  }
+
+  /**
+   * Synthesizes a single crystalline celesta / starlight harp note with e-ratio overtone
+   */
+  private triggerStarNote(
+    ctx: AudioContext,
+    freq: number,
+    peakGain: number,
+    delaySec = 0,
+    targetBus?: GainNode
+  ): void {
+    const startTime = ctx.currentTime + delaySec;
+    const pitchNorm = Math.max(0, Math.min(1, (freq - 290) / 890));
+    if (delaySec <= 0.01) {
+      this.lastStarPulseMs = performance.now();
+      this.lastStarPulsePitch = pitchNorm;
+    } else {
+      window.setTimeout(() => {
+        this.lastStarPulseMs = performance.now();
+        this.lastStarPulsePitch = pitchNorm;
+      }, delaySec * 1000);
+    }
+
+    // Fundamental pure crystal tone
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(freq, startTime);
+
+    // Warm e-ratio bell shimmer (f * e ≈ 2.718 * f) with rapid gentle decay
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(freq * Math.E, startTime);
+
+    // Sub-octave velvet warmth
+    const oscSub = ctx.createOscillator();
+    const gainSub = ctx.createGain();
+    oscSub.type = 'triangle';
+    oscSub.frequency.setValueAtTime(freq * 0.5, startTime);
+
+    gain1.gain.setValueAtTime(0.0001, startTime);
+    gain1.gain.exponentialRampToValueAtTime(peakGain, startTime + 0.018);
+    gain1.gain.exponentialRampToValueAtTime(0.0001, startTime + 2.5);
+
+    gain2.gain.setValueAtTime(0.0001, startTime);
+    gain2.gain.exponentialRampToValueAtTime(peakGain * 0.24, startTime + 0.008);
+    gain2.gain.exponentialRampToValueAtTime(0.0001, startTime + 0.65);
+
+    gainSub.gain.setValueAtTime(0.0001, startTime);
+    gainSub.gain.exponentialRampToValueAtTime(peakGain * 0.35, startTime + 0.04);
+    gainSub.gain.exponentialRampToValueAtTime(0.0001, startTime + 2.8);
+
+    osc1.connect(gain1);
+    osc2.connect(gain2);
+    oscSub.connect(gainSub);
+
+    if (targetBus) {
+      gain1.connect(targetBus);
+      gain2.connect(targetBus);
+      gainSub.connect(targetBus);
+    } else {
+      this.connectWithReverb(gain1);
+      this.connectWithReverb(gain2);
+      this.connectWithReverb(gainSub);
+    }
+
+    osc1.start(startTime);
+    osc2.start(startTime);
+    oscSub.start(startTime);
+
+    osc1.stop(startTime + 2.6);
+    osc2.stop(startTime + 0.7);
+    oscSub.stop(startTime + 2.9);
   }
 
   /**
@@ -342,7 +518,6 @@ class NapierSoundEngine {
   private triggerAbyssalEvent(ctx: AudioContext, masterGain: GainNode): void {
     const now = ctx.currentTime;
 
-    // 18% chance of a gentle distant whale/manta harmonic glide, 82% chance of melodic water bubble
     if (Math.random() < 0.18) {
       const whaleNotes = [146.83, 196.0, 220.0, 293.66, 399.13];
       const f0 = whaleNotes[Math.floor(Math.random() * whaleNotes.length)];
@@ -385,7 +560,6 @@ class NapierSoundEngine {
       return;
     }
 
-    // Melodic rising bubble droplet rooted in the 2.718 harmonic scale
     const freq =
       ABYSSAL_BUBBLE_HZ[Math.floor(Math.random() * ABYSSAL_BUBBLE_HZ.length)] *
       (1.12 - this.currentAbyssalTone * 0.25);
@@ -410,6 +584,49 @@ class NapierSoundEngine {
 
     osc.start(now);
     osc.stop(now + dur + 0.18);
+  }
+
+  /**
+   * Triggers a melodic Stardust Galaxy event (either a singing constellation phrase or a gentle logarithmic spiral note)
+   */
+  private triggerGalaxyMelodyEvent(ctx: AudioContext, masterGain: GainNode): void {
+    const shimmer = this.currentGalaxyShimmer;
+
+    // 32% chance: The galaxy sings a 4-5 note lyrical constellation phrase
+    if (Math.random() < 0.32) {
+      const phrase =
+        GALAXY_SONG_PHRASES[
+          Math.floor(Math.random() * GALAXY_SONG_PHRASES.length)
+        ];
+      phrase.forEach((noteIdx, step) => {
+        const freq = STARDUST_MELODY_HZ[noteIdx % STARDUST_MELODY_HZ.length];
+        const delay = step * (0.2718 + Math.random() * 0.07);
+        const vel = (0.032 + shimmer * 0.022) / (1 + step * 0.11);
+        this.triggerStarNote(ctx, freq, vel, delay, masterGain);
+      });
+      return;
+    }
+
+    // 68% chance: Gentle logarithmic walk along the Stardust scale so it feels like an endless cosmic music box
+    const stepDelta = Math.random() < 0.62 ? 1 : Math.random() < 0.5 ? 2 : -1;
+    this.melodyStepIndex =
+      (this.melodyStepIndex + stepDelta + STARDUST_MELODY_HZ.length) %
+      STARDUST_MELODY_HZ.length;
+    const freq = STARDUST_MELODY_HZ[this.melodyStepIndex];
+    const peak = 0.03 + shimmer * 0.022;
+    this.triggerStarNote(ctx, freq, peak, 0, masterGain);
+
+    // Occasional fifth/octave harmonic twin star
+    if (Math.random() < 0.42 * shimmer) {
+      const twinIdx = (this.melodyStepIndex + 4) % STARDUST_MELODY_HZ.length;
+      this.triggerStarNote(
+        ctx,
+        STARDUST_MELODY_HZ[twinIdx],
+        peak * 0.68,
+        0.18,
+        masterGain
+      );
+    }
   }
 
   /**
@@ -555,7 +772,6 @@ class NapierSoundEngine {
     bandpass.frequency.setValueAtTime(baseCutoff, ctx.currentTime);
     bandpass.Q.setValueAtTime(1.4, ctx.currentTime);
 
-    // 1/e Hz (≈ 0.368 Hz, period 2.718s) slow underwater tide breathing LFO
     const swellLfo = ctx.createOscillator();
     const swellLfoGain = ctx.createGain();
     swellLfo.type = 'sine';
@@ -589,7 +805,6 @@ class NapierSoundEngine {
       if (!this.ctx || this.ctx.state !== 'running') return;
       if (Math.random() < 0.42) {
         this.triggerAbyssalEvent(this.ctx, masterGain);
-        // Occasional double or triple rising bubble stream
         if (Math.random() < 0.38) {
           setTimeout(() => {
             if (this.ctx && this.abyssalNodes) {
@@ -607,6 +822,118 @@ class NapierSoundEngine {
       currentGain,
       masterGain,
       bubbleTimer,
+    };
+  }
+
+  /**
+   * Toggles procedural Stardust Galaxy Soundscape (warm breathing nebula pad + singing celesta star melody)
+   */
+  public setGalaxySound(active: boolean): void {
+    if (!active) {
+      if (this.galaxyNodes && this.ctx) {
+        window.clearInterval(this.galaxyNodes.melodyTimer);
+        const now = this.ctx.currentTime;
+        this.galaxyNodes.masterGain.gain.setValueAtTime(
+          this.galaxyNodes.masterGain.gain.value,
+          now
+        );
+        this.galaxyNodes.masterGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+        const nodesToStop = this.galaxyNodes;
+        this.galaxyNodes = null;
+        setTimeout(() => {
+          try {
+            nodesToStop.padOsc1.stop();
+            nodesToStop.padOsc2.stop();
+            nodesToStop.padOsc3.stop();
+            nodesToStop.padLfo.stop();
+          } catch {
+            // ignore
+          }
+        }, 550);
+      }
+      return;
+    }
+
+    if (this.galaxyNodes) return;
+    const ctx = this.ensureContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+
+    // Warm Nebula Chord Pad: D3 (146.83 Hz) + A3 (220.0 Hz) + E4 (329.63 Hz)
+    const padOsc1 = ctx.createOscillator();
+    const padOsc2 = ctx.createOscillator();
+    const padOsc3 = ctx.createOscillator();
+    padOsc1.type = 'sine';
+    padOsc1.frequency.setValueAtTime(146.83, now);
+
+    padOsc2.type = 'triangle';
+    padOsc2.frequency.setValueAtTime(220.0, now);
+
+    padOsc3.type = 'sine';
+    padOsc3.frequency.setValueAtTime(329.63, now);
+
+    const padFilter = ctx.createBiquadFilter();
+    padFilter.type = 'lowpass';
+    padFilter.frequency.setValueAtTime(180 + this.currentGalaxyDrone * 320, now);
+
+    // 1/e Hz (period 2.718s) breathing cosmic tide LFO
+    const padLfo = ctx.createOscillator();
+    const padLfoGain = ctx.createGain();
+    padLfo.type = 'sine';
+    padLfo.frequency.setValueAtTime(1 / Math.E, now);
+    padLfoGain.gain.setValueAtTime(65, now);
+    padLfo.connect(padLfoGain).connect(padFilter.frequency);
+
+    const padGain = ctx.createGain();
+    const initialDroneGain =
+      this.currentGalaxyDrone <= 0.01 ? 0.00001 : this.currentGalaxyDrone * 0.065;
+    padGain.gain.setValueAtTime(initialDroneGain, now);
+
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(0.0001, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.8, now + 0.9);
+
+    padOsc1.connect(padFilter);
+    padOsc2.connect(padFilter);
+    padOsc3.connect(padFilter);
+    padFilter.connect(padGain).connect(masterGain);
+
+    if (this.dryBus) {
+      masterGain.connect(this.dryBus);
+    } else {
+      masterGain.connect(ctx.destination);
+    }
+    if (this.convolver) {
+      const spaceReverbSend = ctx.createGain();
+      spaceReverbSend.gain.value = 0.78;
+      masterGain.connect(spaceReverbSend).connect(this.convolver);
+    }
+
+    padOsc1.start(now);
+    padOsc2.start(now);
+    padOsc3.start(now);
+    padLfo.start(now);
+
+    // Play an immediate welcoming star chord when turned on
+    this.triggerGalaxyMelodyEvent(ctx, masterGain);
+
+    const melodyTimer = window.setInterval(() => {
+      if (!this.ctx || this.ctx.state !== 'running') return;
+      if (Math.random() < 0.25 + this.currentGalaxyShimmer * 0.68) {
+        this.triggerGalaxyMelodyEvent(this.ctx, masterGain);
+      }
+    }, 460);
+
+    this.galaxyNodes = {
+      padOsc1,
+      padOsc2,
+      padOsc3,
+      padLfo,
+      padFilter,
+      padGain,
+      masterGain,
+      melodyTimer,
     };
   }
 
